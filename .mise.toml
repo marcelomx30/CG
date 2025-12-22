@@ -1,0 +1,8 @@
+[env]
+# Set C++ standard
+CXXFLAGS = "-std=c++20"
+CXX = "g++"
+CC = "gcc"
+
+# Optional: add any project-specific paths
+# PATH = ["./build/bin", "$PATH"]
