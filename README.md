@@ -1,1 +1,1 @@
-Trabalho final para a cadeira de COmputacao Grafica
+Trabalho final para a cadeira de Computacao Grafica
