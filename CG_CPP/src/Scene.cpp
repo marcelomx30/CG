@@ -47,7 +47,6 @@ bool Scene::isInShadow(const Vector3& point, const Vector3& lightPos) const {
     double distanceToLight = toLight.length();
     Vector3 directionToLight = toLight.normalized();
     
-    // Offset pequeno para evitar auto-interseção
     Ray shadowRay(point + directionToLight * 1e-4, directionToLight);
     
     HitRecord tempRec;
@@ -64,36 +63,29 @@ Color Scene::computeLighting(const HitRecord& hit, const Ray& ray) const {
     const Material& mat = hit.material;
     Vector3 point = hit.point;
     Vector3 normal = hit.normal;
-    Vector3 viewDir = -ray.direction;  // Direção para o observador
+    Vector3 viewDir = -ray.direction;
     
-    // Cor difusa (textura ou cor sólida)
     Color materialColor = mat.getDiffuseColor(point);
     
-    // Componente ambiente
     Color ambient(0, 0, 0);
     if (ambientLight) {
         ambient = mat.ka * ambientLight->intensity;
     }
     
-    // Componentes difusa e especular
     Color diffuse(0, 0, 0);
     Color specular(0, 0, 0);
     
-    // Luzes pontuais
     for (const auto& light : pointLights) {
         Vector3 lightDir = (light->position - point).normalized();
         
-        // Verifica sombra
         if (isInShadow(point, light->position)) {
             continue;
         }
         
-        // Componente difusa com textura
         double nDotL = std::max(0.0, normal.dot(lightDir));
         if (nDotL > 0) {
             diffuse = diffuse + materialColor * light->intensity * nDotL;
             
-            // Componente especular
             Vector3 reflectDir = lightDir.reflect(normal);
             double vDotR = std::max(0.0, viewDir.dot(reflectDir));
             if (vDotR > 0) {
@@ -103,7 +95,6 @@ Color Scene::computeLighting(const HitRecord& hit, const Ray& ray) const {
         }
     }
     
-    // Luzes direcionais
     for (const auto& light : directionalLights) {
         Vector3 lightDir = -light->direction;
         
@@ -120,7 +111,6 @@ Color Scene::computeLighting(const HitRecord& hit, const Ray& ray) const {
         }
     }
     
-    // Luzes spot
     for (const auto& light : spotLights) {
         Vector3 lightDir = (light->position - point).normalized();
         
@@ -153,12 +143,11 @@ Color Scene::traceRay(const Ray& ray) const {
     
     if (intersect(ray, rec)) {
         return computeLighting(rec, ray);
-    } else {
-        return backgroundColor;
     }
+    
+    return backgroundColor;
 }
 
-// RENDERER
 Renderer::Renderer(Scene& scene, Camera& camera)
     : scene(scene), camera(camera) {}
 
@@ -177,34 +166,39 @@ void Renderer::render(const std::string& filename) {
         
         for (int i = 0; i < width; i++) {
             Ray ray = camera.getRay(i, j);
-            Color color = scene.traceRay(ray);
-            image[j][i] = color;
+            Color pixelColor = scene.traceRay(ray);
+            image[j][i] = pixelColor;
         }
     }
     
-    std::cout << "Renderização completa!" << std::endl;
     std::cout << "Salvando imagem..." << std::endl;
-    
     savePPM(filename, image);
-    
-    std::cout << "Imagem salva: " << filename << std::endl;
 }
 
 void Renderer::savePPM(const std::string& filename, const std::vector<std::vector<Color>>& image) {
-    std::ofstream file(filename);
-    int width = image[0].size();
+    std::ofstream file(filename, std::ios::binary);
+    
+    if (!file.is_open()) {
+        std::cerr << "Erro ao abrir arquivo: " << filename << std::endl;
+        return;
+    }
+    
     int height = image.size();
+    int width = image[0].size();
     
     file << "P3\n" << width << " " << height << "\n255\n";
     
     for (int j = 0; j < height; j++) {
         for (int i = 0; i < width; i++) {
-            int r, g, b;
-            image[j][i].toRGB(r, g, b);
-            file << r << " " << g << " " << b << " ";
+            const Color& color = image[j][i];
+            int r = static_cast<int>(255.99 * color.r);
+            int g = static_cast<int>(255.99 * color.g);
+            int b = static_cast<int>(255.99 * color.b);
+            
+            file << r << " " << g << " " << b << "\n";
         }
-        file << "\n";
     }
     
     file.close();
+    std::cout << "Imagem salva: " << filename << std::endl;
 }
