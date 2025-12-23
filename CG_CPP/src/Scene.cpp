@@ -66,6 +66,9 @@ Color Scene::computeLighting(const HitRecord& hit, const Ray& ray) const {
     Vector3 normal = hit.normal;
     Vector3 viewDir = -ray.direction;  // Direção para o observador
     
+    // Cor difusa (textura ou cor sólida)
+    Color materialColor = mat.getDiffuseColor(point);
+    
     // Componente ambiente
     Color ambient(0, 0, 0);
     if (ambientLight) {
@@ -85,10 +88,10 @@ Color Scene::computeLighting(const HitRecord& hit, const Ray& ray) const {
             continue;
         }
         
-        // Componente difusa
+        // Componente difusa com textura
         double nDotL = std::max(0.0, normal.dot(lightDir));
         if (nDotL > 0) {
-            diffuse = diffuse + mat.kd * light->intensity * nDotL;
+            diffuse = diffuse + materialColor * light->intensity * nDotL;
             
             // Componente especular
             Vector3 reflectDir = lightDir.reflect(normal);
@@ -106,7 +109,7 @@ Color Scene::computeLighting(const HitRecord& hit, const Ray& ray) const {
         
         double nDotL = std::max(0.0, normal.dot(lightDir));
         if (nDotL > 0) {
-            diffuse = diffuse + mat.kd * light->intensity * nDotL;
+            diffuse = diffuse + materialColor * light->intensity * nDotL;
             
             Vector3 reflectDir = lightDir.reflect(normal);
             double vDotR = std::max(0.0, viewDir.dot(reflectDir));
@@ -129,7 +132,7 @@ Color Scene::computeLighting(const HitRecord& hit, const Ray& ray) const {
         
         double nDotL = std::max(0.0, normal.dot(lightDir));
         if (nDotL > 0) {
-            diffuse = diffuse + mat.kd * lightIntensity * nDotL;
+            diffuse = diffuse + materialColor * lightIntensity * nDotL;
             
             Vector3 reflectDir = lightDir.reflect(normal);
             double vDotR = std::max(0.0, viewDir.dot(reflectDir));
