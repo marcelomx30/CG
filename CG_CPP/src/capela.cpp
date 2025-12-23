@@ -15,19 +15,20 @@ using namespace std;
 // ===== TEXTURAS PROCEDURAIS =====
 
 Color woodTexture(const Vector3& point) {
-    // Textura de madeira MUITO VISÍVEL com listras grossas
-    double frequency = 2.0;  // Listras mais grossas
+    // Textura de madeira com contraste EXTREMO
+    double frequency = 1.5;  // Listras ainda mais grossas
     double grain = sin(point.y * frequency) * 0.5 + 0.5;
     
-    // Cores BEM CONTRASTANTES
-    Color darkWood(0.3, 0.15, 0.05);   // Marrom escuro
-    Color lightWood(0.9, 0.6, 0.3);    // Laranja claro
-    
-    return darkWood * (1.0 - grain) + lightWood * grain;
+    // CONTRASTE MÁXIMO entre claro e escuro
+    if (grain > 0.5) {
+        return Color(1.0, 0.7, 0.3);  // LARANJA BRILHANTE
+    } else {
+        return Color(0.4, 0.2, 0.1);  // MARROM ESCURO
+    }
 }
 
 Color stainedGlassTexture(const Vector3& point) {
-    // Normalizar para coordenadas 0-1 na janela
+    // Vitral com cores PURAS e MÁXIMAS
     double u = (point.x - 5.4) / 1.2;
     double v = (point.y - 3.0) / 2.8;
     
@@ -36,34 +37,34 @@ Color stainedGlassTexture(const Vector3& point) {
     double dy = v - cy;
     double dist = sqrt(dx*dx + dy*dy);
     
-    // CRUZ CENTRAL DOURADA (MAIS GROSSA)
-    double crossWidth = 0.12;  // Mais grossa
+    // CRUZ DOURADA SUPER GROSSA
+    double crossWidth = 0.15;
     if (fabs(dx) < crossWidth || fabs(dy) < crossWidth) {
-        return Color(1.0, 0.9, 0.2);  // Amarelo dourado BRILHANTE
+        return Color(1.0, 1.0, 0.0);  // AMARELO PURO MÁXIMO
     }
     
     // CÍRCULO CENTRAL BRANCO
-    if (dist < 0.12) {
-        return Color(1.0, 1.0, 1.0);  // BRANCO PURO
+    if (dist < 0.15) {
+        return Color(1.0, 1.0, 1.0);  // BRANCO MÁXIMO
     }
     
-    // ANÉIS COLORIDOS VIBRANTES
-    if (dist < 0.22) {
-        return Color(1.0, 0.0, 0.0);  // VERMELHO PURO
+    // ANÉIS COLORIDOS
+    if (dist < 0.25) {
+        return Color(1.0, 0.0, 0.0);  // VERMELHO MÁXIMO
     }
-    if (dist < 0.32) {
-        return Color(0.0, 0.3, 1.0);  // AZUL VIBRANTE
+    if (dist < 0.35) {
+        return Color(0.0, 0.5, 1.0);  // AZUL MÁXIMO
     }
     
-    // QUADRANTES COLORIDOS
+    // QUADRANTES COM CORES PURAS
     if (dx > 0 && dy > 0) {
-        return Color(0.0, 1.0, 0.0);  // VERDE PURO
+        return Color(0.0, 1.0, 0.0);  // VERDE MÁXIMO
     } else if (dx < 0 && dy > 0) {
-        return Color(1.0, 1.0, 0.0);  // AMARELO PURO
+        return Color(1.0, 0.8, 0.0);  // AMARELO/OURO
     } else if (dx < 0 && dy < 0) {
-        return Color(1.0, 0.0, 1.0);  // MAGENTA
+        return Color(1.0, 0.0, 1.0);  // MAGENTA MÁXIMO
     } else {
-        return Color(1.0, 0.5, 0.0);  // LARANJA
+        return Color(1.0, 0.5, 0.0);  // LARANJA MÁXIMO
     }
 }
 
@@ -84,8 +85,9 @@ int main() {
     Material matSkin(Color(0.6,0.45,0.35), Color(0.85,0.7,0.6), Color(0.5,0.4,0.3), 20.0);
     Material matCandleBase(Color(0.15,0.1,0.05), Color(0.4,0.25,0.15), Color(0.3,0.2,0.1), 35.0);
     
-    Material matWood(Color(0.5,0.4,0.3), Color(0.9,0.7,0.5), Color(0.5,0.4,0.3), 30.0, woodTexture);
-    Material matVitral(Color(0.7,0.7,0.7), Color(1.0,1.0,1.0), Color(1.0,1.0,1.0), 100.0, stainedGlassTexture);
+    // MATERIAIS COM ka MUITO ALTO (para ver texturas com luz ambiente)
+    Material matWood(Color(0.9,0.7,0.5), Color(0.9,0.7,0.5), Color(0.3,0.3,0.3), 20.0, woodTexture);
+    Material matVitral(Color(1.0,1.0,1.0), Color(1.0,1.0,1.0), Color(0.5,0.5,0.5), 50.0, stainedGlassTexture);
     
     cout << "Criando capela..." << endl;
     
@@ -227,17 +229,18 @@ int main() {
     
     cout << "Objetos: " << scene.objects.size() << endl;
     
-    scene.setAmbientLight(make_shared<AmbientLight>(Color(0.4,0.4,0.4)));  // Mais luz ambiente
-    scene.addLight(make_shared<DirectionalLight>(Vector3(0,-0.6,0.4), Color(0.6,0.55,0.45)));
-    scene.addLight(make_shared<PointLight>(Vector3(6,5,17), Color(0.5,0.5,0.55)));
+    scene.setAmbientLight(make_shared<AmbientLight>(Color(0.7,0.7,0.7)));  // LUZ AMBIENTE MAXIMA!
+    scene.addLight(make_shared<DirectionalLight>(Vector3(0,-0.6,0.4), Color(0.3,0.3,0.3)));  // Reduzida
+    scene.addLight(make_shared<PointLight>(Vector3(6,5,17), Color(0.3,0.3,0.3)));
     scene.addLight(make_shared<PointLight>(Vector3(8,1.25,17.5), Color(0.9,0.2,0.15)));
-    scene.addLight(make_shared<PointLight>(Vector3(6,6,10), Color(0.3,0.3,0.35)));
+    scene.addLight(make_shared<PointLight>(Vector3(6,6,10), Color(0.2,0.2,0.2)));
     
-    // LUZ EXTRA PARA ILUMINAR OS BANCOS
-    scene.addLight(make_shared<PointLight>(Vector3(3,3,8), Color(0.5,0.5,0.5)));
-    scene.addLight(make_shared<PointLight>(Vector3(9,3,8), Color(0.5,0.5,0.5)));
+    // Luzes suaves nos bancos
+    scene.addLight(make_shared<PointLight>(Vector3(3,2,8), Color(0.3,0.3,0.3)));
+    scene.addLight(make_shared<PointLight>(Vector3(9,2,8), Color(0.3,0.3,0.3)));
     
-    scene.addLight(make_shared<SpotLight>(Vector3(6, 4, 17), Vector3(0, 0.2, 1), Color(1.5, 1.4, 1.2), 30.0, 3.0));
+    // LUZ NO VITRAL (suave, sem spotlight)
+    scene.addLight(make_shared<PointLight>(Vector3(6, 4, 19), Color(0.4,0.4,0.4)));
     
     cout << "Luzes: 8 (extra para iluminar texturas)" << endl;
     
