@@ -69,7 +69,7 @@ Color Scene::computeLighting(const HitRecord& hit, const Ray& ray) const {
     
     Color ambient(0, 0, 0);
     if (ambientLight) {
-        ambient = mat.ka * ambientLight->intensity;
+        ambient = materialColor * ambientLight->intensity;  // USA COR DA TEXTURA!
     }
     
     Color diffuse(0, 0, 0);

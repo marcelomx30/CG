@@ -15,15 +15,15 @@ using namespace std;
 // ===== TEXTURAS PROCEDURAIS =====
 
 Color woodTexture(const Vector3& point) {
-    // Textura de madeira com contraste EXTREMO
-    double frequency = 1.5;  // Listras ainda mais grossas
+    // Textura de madeira com contraste MÁXIMO
+    double frequency = 1.0;  // Listras BEM GROSSAS
     double grain = sin(point.y * frequency) * 0.5 + 0.5;
     
-    // CONTRASTE MÁXIMO entre claro e escuro
+    // CONTRASTE MÁXIMO: OU LARANJA BRILHANTE OU MARROM ESCURO
     if (grain > 0.5) {
-        return Color(1.0, 0.7, 0.3);  // LARANJA BRILHANTE
+        return Color(1.0, 0.8, 0.3);  // LARANJA MUITO BRILHANTE
     } else {
-        return Color(0.4, 0.2, 0.1);  // MARROM ESCURO
+        return Color(0.3, 0.15, 0.05);  // MARROM BEM ESCURO
     }
 }
 
@@ -200,22 +200,27 @@ int main() {
         }
     }
     
+    // JANELA - SEM MOLDURA (moldura estava bloqueando!)
     cout << "Criando janela..." << endl;
-    scene.addObject(make_shared<Cylinder>(Vector3(5.3,3,19.8), 0.08, 2.5, Vector3(0,1,0), matFrame));
-    scene.addObject(make_shared<Cylinder>(Vector3(6.7,3,19.8), 0.08, 2.5, Vector3(0,1,0), matFrame));
-    scene.addObject(make_shared<Cylinder>(Vector3(6,2.8,19.8), 0.08, 0.7, Vector3(1,0,0), matFrame));
-    scene.addObject(make_shared<Cylinder>(Vector3(5.5,5.2,19.8), 0.08, 1.0, Vector3(0.5,0.866,0), matFrame));
-    scene.addObject(make_shared<Cylinder>(Vector3(6.5,5.2,19.8), 0.08, 1.0, Vector3(-0.5,0.866,0), matFrame));
+    // Moldura REMOVIDA para não bloquear o vitral!
     
     cout << "Criando vitral com textura..." << endl;
     auto vitral = make_shared<Mesh>(matVitral);
-    Vector3 vb1(5.4, 3.0, 19.75), vb2(6.6, 3.0, 19.75);
-    Vector3 vb3(6.6, 5.0, 19.75), vb4(5.4, 5.0, 19.75);
-    Vector3 vtop(6.0, 5.8, 19.75);
+    Vector3 vb1(5.4, 3.0, 19.5), vb2(6.6, 3.0, 19.5);  // z=19.5 (mais visível!)
+    Vector3 vb3(6.6, 5.0, 19.5), vb4(5.4, 5.0, 19.5);
+    Vector3 vtop(6.0, 5.8, 19.5);
     vitral->addTriangle(Triangle(vb1, vb2, vb3, matVitral));
     vitral->addTriangle(Triangle(vb1, vb3, vb4, matVitral));
     vitral->addTriangle(Triangle(vb4, vb3, vtop, matVitral));
     scene.addObject(vitral);
+    
+    // TESTE: QUADRADO GIGANTE VERMELHO para verificar se texturas funcionam
+    auto teste = make_shared<Mesh>(matVitral);
+    Vector3 t1(4, 6, 19.4), t2(5, 6, 19.4);
+    Vector3 t3(5, 7, 19.4), t4(4, 7, 19.4);
+    teste->addTriangle(Triangle(t1, t2, t3, matVitral));
+    teste->addTriangle(Triangle(t1, t3, t4, matVitral));
+    scene.addObject(teste);
     
     cout << "Criando vela..." << endl;
     scene.addObject(make_shared<Cylinder>(Vector3(8,0,17.5), 0.15, 0.15, Vector3(0,1,0), matCandleBase));
