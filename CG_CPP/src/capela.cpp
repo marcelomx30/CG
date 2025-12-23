@@ -85,29 +85,39 @@ int main() {
     }
     
     // DISCO CENTRAL (HÓSTIA) - COR DE PELE
-    scene.addObject(make_shared<Sphere>(ostCenter, 0.16, matSkin));
+    scene.addObject(make_shared<Sphere>(ostCenter, 0.14, matSkin));
     
-    // ANEL DOURADO ao redor da hóstia
+    // ANEL DOURADO bem próximo da hóstia (PLANO XY - VERTICAL!)
     for(int i=0; i<20; i++) {
         double angle = i * 2*M_PI/20;
         scene.addObject(make_shared<Sphere>(
-            Vector3(ostCenter.x + 0.18*cos(angle), ostCenter.y, ostCenter.z + 0.18*sin(angle)),
-            0.012, matGold
+            Vector3(ostCenter.x + 0.16*cos(angle), ostCenter.y + 0.16*sin(angle), ostCenter.z),
+            0.01, matGold
         ));
     }
     
-    // 7 RAIOS DO HEPTÁGONO
+    // 7 RAIOS formando heptágono VERTICAL (plano XY)
     for(int i=0; i<7; i++) {
         double angle = i * 2*M_PI/7;
         
-        // Linha de esferas formando o raio
-        for(int j=1; j<=5; j++) {
-            double r = 0.22 + j*0.06;
+        // Raios começam após o anel e vão até 0.35
+        for(int j=0; j<=4; j++) {
+            double r = 0.18 + j*0.04;
+            double size = 0.022 - j*0.003;
             scene.addObject(make_shared<Sphere>(
-                Vector3(ostCenter.x + r*cos(angle), ostCenter.y, ostCenter.z + r*sin(angle)),
-                0.025 - j*0.003, matGold
+                Vector3(ostCenter.x + r*cos(angle), ostCenter.y + r*sin(angle), ostCenter.z),
+                size, matGold
             ));
         }
+    }
+    
+    // Esferas maiores nos vértices do heptágono VERTICAL
+    for(int i=0; i<7; i++) {
+        double angle = i * 2*M_PI/7;
+        scene.addObject(make_shared<Sphere>(
+            Vector3(ostCenter.x + 0.34*cos(angle), ostCenter.y + 0.34*sin(angle), ostCenter.z),
+            0.025, matGold
+        ));
     }
     
     // BANCOS INDIVIDUAIS - MAIS FILEIRAS
