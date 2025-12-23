@@ -8,377 +8,239 @@
 #include "../include/Scene.h"
 #include <iostream>
 #include <memory>
+#include <cmath>
 
 using namespace std;
 
 int main() {
     cout << "========================================" << endl;
-    cout << "       TRABALHO FINAL DE CG" << endl;
-    cout << "    Cena: Capela com Altar" << endl;
+    cout << "    CAPELA - Seguindo Esboco" << endl;
     cout << "========================================" << endl;
     
-    // Criar cena
     Scene scene;
-    scene.backgroundColor = Color(0.8, 0.85, 0.9);  // Céu claro
+    scene.backgroundColor = Color(0.3, 0.35, 0.4);
     
-    // ============ MATERIAIS ============
+    // MATERIAIS
+    Material matBench(Color(0.15,0.10,0.05), Color(0.4,0.25,0.15), Color(0.2,0.15,0.1), 15.0);
+    Material matAltar(Color(0.6,0.6,0.6), Color(0.9,0.9,0.9), Color(0.5,0.5,0.5), 30.0);
+    Material matGold(Color(0.3,0.25,0.1), Color(0.9,0.75,0.3), Color(1.0,0.95,0.7), 100.0);
+    Material matWall(Color(0.35,0.33,0.30), Color(0.7,0.68,0.65), Color(0.2,0.2,0.2), 10.0);
+    Material matFloor(Color(0.3,0.25,0.18), Color(0.6,0.5,0.4), Color(0.3,0.25,0.2), 20.0);
+    Material matWindow(Color(0.5,0.5,0.4), Color(0.8,0.8,0.6), Color(0.9,0.9,0.8), 50.0);
+    Material matFrame(Color(0.2,0.2,0.2), Color(0.4,0.4,0.4), Color(0.3,0.3,0.3), 20.0);
+    Material matCandle(Color(0.4,0.1,0.1), Color(0.8,0.2,0.15), Color(1.0,0.4,0.3), 60.0);
+    Material matSkin(Color(0.6,0.45,0.35), Color(0.85,0.7,0.6), Color(0.5,0.4,0.3), 20.0); // Cor de pele
+    Material matCandleBase(Color(0.1,0.05,0.02), Color(0.3,0.15,0.08), Color(0.2,0.1,0.05), 30.0); // Base escura
     
-    // Madeira dos bancos (marrom)
-    Material matWood(
-        Color(0.15, 0.10, 0.05),   // ka - ambiente
-        Color(0.45, 0.30, 0.15),   // kd - difuso
-        Color(0.3, 0.2, 0.1),      // ks - especular
-        20.0                        // shininess
-    );
+    cout << "Criando capela..." << endl;
     
-    // Altar (madeira clara)
-    Material matAltarWood(
-        Color(0.25, 0.20, 0.15),
-        Color(0.65, 0.55, 0.45),
-        Color(0.4, 0.3, 0.2),
-        30.0
-    );
+    // ESTRUTURA
+    scene.addObject(make_shared<Plane>(Vector3(6,0,10), Vector3(0,1,0), matFloor));
+    scene.addObject(make_shared<Plane>(Vector3(6,0,20), Vector3(0,0,-1), matWall));
+    scene.addObject(make_shared<Plane>(Vector3(0,0,10), Vector3(1,0,0), matWall));
+    scene.addObject(make_shared<Plane>(Vector3(12,0,10), Vector3(-1,0,0), matWall));
+    scene.addObject(make_shared<Plane>(Vector3(6,8,10), Vector3(0,-1,0), matWall));
+    scene.addObject(make_shared<Plane>(Vector3(6,0,0), Vector3(0,0,1), matWall));
     
-    // Ostensório (dourado brilhante)
-    Material matGold(
-        Color(0.3, 0.25, 0.0),
-        Color(0.9, 0.75, 0.2),
-        Color(1.0, 0.95, 0.6),
-        80.0  // Muito brilhante
-    );
+    // ALTAR
+    auto altarBase = make_shared<Mesh>(matWall);
+    double aW=1.5, aH=0.8, aD=0.5;
+    Vector3 aC(6,0,18);
+    Vector3 ab1(aC.x-aW,aC.y,aC.z-aD), ab2(aC.x+aW,aC.y,aC.z-aD);
+    Vector3 ab3(aC.x+aW,aC.y,aC.z+aD), ab4(aC.x-aW,aC.y,aC.z+aD);
+    Vector3 ab5(aC.x-aW,aC.y+aH,aC.z-aD), ab6(aC.x+aW,aC.y+aH,aC.z-aD);
+    Vector3 ab7(aC.x+aW,aC.y+aH,aC.z+aD), ab8(aC.x-aW,aC.y+aH,aC.z+aD);
+    altarBase->addTriangle(Triangle(ab1,ab2,ab6,matWall)); altarBase->addTriangle(Triangle(ab1,ab6,ab5,matWall));
+    altarBase->addTriangle(Triangle(ab4,ab3,ab7,matWall)); altarBase->addTriangle(Triangle(ab4,ab7,ab8,matWall));
+    altarBase->addTriangle(Triangle(ab1,ab4,ab8,matWall)); altarBase->addTriangle(Triangle(ab1,ab8,ab5,matWall));
+    altarBase->addTriangle(Triangle(ab2,ab3,ab7,matWall)); altarBase->addTriangle(Triangle(ab2,ab7,ab6,matWall));
+    altarBase->addTriangle(Triangle(ab5,ab6,ab7,matWall)); altarBase->addTriangle(Triangle(ab5,ab7,ab8,matWall));
+    scene.addObject(altarBase);
     
-    // Paredes (bege claro)
-    Material matWall(
-        Color(0.35, 0.33, 0.30),
-        Color(0.85, 0.82, 0.78),
-        Color(0.2, 0.2, 0.2),
-        10.0
-    );
+    // TOALHA
+    auto cloth = make_shared<Mesh>(matAltar);
+    double cW=1.8, cD=0.7;
+    Vector3 cC(6,aH+0.01,18);
+    Vector3 c1(cC.x-cW,cC.y,cC.z-cD), c2(cC.x+cW,cC.y,cC.z-cD);
+    Vector3 c3(cC.x+cW,cC.y,cC.z+cD), c4(cC.x-cW,cC.y,cC.z+cD);
+    cloth->addTriangle(Triangle(c1,c2,c3,matAltar));
+    cloth->addTriangle(Triangle(c1,c3,c4,matAltar));
+    scene.addObject(cloth);
     
-    // Chão (madeira clara)
-    Material matFloor(
-        Color(0.25, 0.20, 0.15),
-        Color(0.60, 0.50, 0.40),
-        Color(0.25, 0.20, 0.15),
-        15.0
-    );
+    // OSTENSORIO SIMPLES E VISÍVEL
+    cout << "Criando ostensorio..." << endl;
     
-    // Janelas (vidro azulado claro)
-    Material matWindow(
-        Color(0.4, 0.5, 0.6),
-        Color(0.6, 0.7, 0.8),
-        Color(0.8, 0.9, 1.0),
-        50.0
-    );
+    // Posição: em cima do altar, centralizado
+    Vector3 ostBase(6, aH + 0.01, 18);
+    Vector3 ostCenter(6, aH + 0.5, 18);
     
-    // Vela/lamparina (vermelho emissor)
-    Material matRedLight(
-        Color(0.3, 0.05, 0.05),
-        Color(0.9, 0.1, 0.1),
-        Color(1.0, 0.3, 0.3),
-        60.0
-    );
+    // BASE DO OSTENSÓRIO
+    scene.addObject(make_shared<Sphere>(ostBase, 0.15, matGold));
     
-    cout << "\nCriando estrutura da capela..." << endl;
-    
-    // ============ ESTRUTURA DA CAPELA ============
-    
-    // Dimensões: 12m largura x 8m altura x 20m profundidade
-    // Centro em (6, 0, 10)
-    
-    // CHÃO
-    auto floor = make_shared<Plane>(
-        Vector3(6, 0, 10),
-        Vector3(0, 1, 0),
-        matFloor
-    );
-    scene.addObject(floor);
-    
-    // PAREDES
-    // Parede frontal (com janela)
-    auto wallFront = make_shared<Plane>(
-        Vector3(6, 0, 20),
-        Vector3(0, 0, -1),
-        matWall
-    );
-    scene.addObject(wallFront);
-    
-    // Parede esquerda
-    auto wallLeft = make_shared<Plane>(
-        Vector3(0, 0, 10),
-        Vector3(1, 0, 0),
-        matWall
-    );
-    scene.addObject(wallLeft);
-    
-    // Parede direita
-    auto wallRight = make_shared<Plane>(
-        Vector3(12, 0, 10),
-        Vector3(-1, 0, 0),
-        matWall
-    );
-    scene.addObject(wallRight);
-    
-    // Teto
-    auto ceiling = make_shared<Plane>(
-        Vector3(6, 8, 10),
-        Vector3(0, -1, 0),
-        matWall
-    );
-    scene.addObject(ceiling);
-    
-    // Parede de trás (entrada)
-    auto wallBack = make_shared<Plane>(
-        Vector3(6, 0, 0),
-        Vector3(0, 0, 1),
-        matWall
-    );
-    scene.addObject(wallBack);
-    
-    cout << "Criando altar..." << endl;
-    
-    // ============ ALTAR ============
-    
-    // Base do altar (cubo de malha)
-    auto altar = make_shared<Mesh>(matAltarWood);
-    
-    // Dimensões do altar: 3m largura x 1.2m altura x 1m profundidade
-    // Posição: centralizado na frente (x=6, y=0, z=17)
-    double altarW = 1.5;  // meia-largura
-    double altarH = 1.2;  // altura
-    double altarD = 0.5;  // meia-profundidade
-    Vector3 altarCenter(6, 0, 17);
-    
-    // Vértices do altar
-    Vector3 a1(altarCenter.x - altarW, altarCenter.y, altarCenter.z - altarD);
-    Vector3 a2(altarCenter.x + altarW, altarCenter.y, altarCenter.z - altarD);
-    Vector3 a3(altarCenter.x + altarW, altarCenter.y, altarCenter.z + altarD);
-    Vector3 a4(altarCenter.x - altarW, altarCenter.y, altarCenter.z + altarD);
-    Vector3 a5(altarCenter.x - altarW, altarCenter.y + altarH, altarCenter.z - altarD);
-    Vector3 a6(altarCenter.x + altarW, altarCenter.y + altarH, altarCenter.z - altarD);
-    Vector3 a7(altarCenter.x + altarW, altarCenter.y + altarH, altarCenter.z + altarD);
-    Vector3 a8(altarCenter.x - altarW, altarCenter.y + altarH, altarCenter.z + altarD);
-    
-    // Faces do altar
-    altar->addTriangle(Triangle(a1, a2, a6, matAltarWood)); altar->addTriangle(Triangle(a1, a6, a5, matAltarWood)); // Frente
-    altar->addTriangle(Triangle(a4, a3, a7, matAltarWood)); altar->addTriangle(Triangle(a4, a7, a8, matAltarWood)); // Trás
-    altar->addTriangle(Triangle(a1, a4, a8, matAltarWood)); altar->addTriangle(Triangle(a1, a8, a5, matAltarWood)); // Esquerda
-    altar->addTriangle(Triangle(a2, a3, a7, matAltarWood)); altar->addTriangle(Triangle(a2, a7, a6, matAltarWood)); // Direita
-    altar->addTriangle(Triangle(a5, a6, a7, matAltarWood)); altar->addTriangle(Triangle(a5, a7, a8, matAltarWood)); // Topo
-    scene.addObject(altar);
-    
-    // OSTENSÓRIO (esfera dourada no topo do altar)
-    auto monstrance = make_shared<Sphere>(
-        Vector3(6, altarH + 0.5, 17),  // Acima do altar
-        0.3,  // Raio
-        matGold
-    );
-    scene.addObject(monstrance);
-    
-    // Raios do ostensório (cilindros finos)
-    for (int i = 0; i < 8; i++) {
-        double angle = i * M_PI / 4;
-        double offsetX = 0.5 * cos(angle);
-        double offsetZ = 0.5 * sin(angle);
-        
-        auto ray = make_shared<Cylinder>(
-            Vector3(6 + offsetX, altarH + 0.5, 17 + offsetZ),
-            0.03,  // Raio muito fino
-            0.4,   // Altura
-            Vector3(cos(angle), 0, sin(angle)),  // Direção radial
-            matGold
-        );
-        scene.addObject(ray);
+    // HASTE (esferas empilhadas)
+    for(int i=1; i<=10; i++) {
+        scene.addObject(make_shared<Sphere>(
+            Vector3(6, aH + i*0.05, 18), 0.03, matGold
+        ));
     }
     
+    // DISCO CENTRAL (HÓSTIA) - COR DE PELE
+    scene.addObject(make_shared<Sphere>(ostCenter, 0.16, matSkin));
+    
+    // ANEL DOURADO ao redor da hóstia
+    for(int i=0; i<20; i++) {
+        double angle = i * 2*M_PI/20;
+        scene.addObject(make_shared<Sphere>(
+            Vector3(ostCenter.x + 0.18*cos(angle), ostCenter.y, ostCenter.z + 0.18*sin(angle)),
+            0.012, matGold
+        ));
+    }
+    
+    // 7 RAIOS DO HEPTÁGONO
+    for(int i=0; i<7; i++) {
+        double angle = i * 2*M_PI/7;
+        
+        // Linha de esferas formando o raio
+        for(int j=1; j<=5; j++) {
+            double r = 0.22 + j*0.06;
+            scene.addObject(make_shared<Sphere>(
+                Vector3(ostCenter.x + r*cos(angle), ostCenter.y, ostCenter.z + r*sin(angle)),
+                0.025 - j*0.003, matGold
+            ));
+        }
+    }
+    
+    // BANCOS INDIVIDUAIS - MAIS FILEIRAS
     cout << "Criando bancos..." << endl;
-    
-    // ============ BANCOS ============
-    
-    // Criar 6 bancos (3 de cada lado)
-    // Dimensões de cada banco: 1m largura x 0.5m altura x 0.4m profundidade
-    
-    for (int row = 0; row < 3; row++) {
-        double zPos = 5 + row * 3;  // Espaçamento de 3m
-        
-        // Banco esquerdo
-        auto benchLeft = make_shared<Mesh>(matWood);
-        Vector3 blCenter(2, 0, zPos);
-        double bW = 0.5, bH = 0.5, bD = 1.5;
-        
-        Vector3 bl1(blCenter.x - bW, blCenter.y, blCenter.z - bD);
-        Vector3 bl2(blCenter.x + bW, blCenter.y, blCenter.z - bD);
-        Vector3 bl3(blCenter.x + bW, blCenter.y, blCenter.z + bD);
-        Vector3 bl4(blCenter.x - bW, blCenter.y, blCenter.z + bD);
-        Vector3 bl5(blCenter.x - bW, blCenter.y + bH, blCenter.z - bD);
-        Vector3 bl6(blCenter.x + bW, blCenter.y + bH, blCenter.z - bD);
-        Vector3 bl7(blCenter.x + bW, blCenter.y + bH, blCenter.z + bD);
-        Vector3 bl8(blCenter.x - bW, blCenter.y + bH, blCenter.z + bD);
-        
-        benchLeft->addTriangle(Triangle(bl1, bl2, bl6, matWood)); benchLeft->addTriangle(Triangle(bl1, bl6, bl5, matWood));
-        benchLeft->addTriangle(Triangle(bl4, bl3, bl7, matWood)); benchLeft->addTriangle(Triangle(bl4, bl7, bl8, matWood));
-        benchLeft->addTriangle(Triangle(bl1, bl4, bl8, matWood)); benchLeft->addTriangle(Triangle(bl1, bl8, bl5, matWood));
-        benchLeft->addTriangle(Triangle(bl2, bl3, bl7, matWood)); benchLeft->addTriangle(Triangle(bl2, bl7, bl6, matWood));
-        benchLeft->addTriangle(Triangle(bl5, bl6, bl7, matWood)); benchLeft->addTriangle(Triangle(bl5, bl7, bl8, matWood));
-        scene.addObject(benchLeft);
-        
-        // Banco direito
-        auto benchRight = make_shared<Mesh>(matWood);
-        Vector3 brCenter(10, 0, zPos);
-        
-        Vector3 br1(brCenter.x - bW, brCenter.y, brCenter.z - bD);
-        Vector3 br2(brCenter.x + bW, brCenter.y, brCenter.z - bD);
-        Vector3 br3(brCenter.x + bW, brCenter.y, brCenter.z + bD);
-        Vector3 br4(brCenter.x - bW, brCenter.y, brCenter.z + bD);
-        Vector3 br5(brCenter.x - bW, brCenter.y + bH, brCenter.z - bD);
-        Vector3 br6(brCenter.x + bW, brCenter.y + bH, brCenter.z - bD);
-        Vector3 br7(brCenter.x + bW, brCenter.y + bH, brCenter.z + bD);
-        Vector3 br8(brCenter.x - bW, brCenter.y + bH, brCenter.z + bD);
-        
-        benchRight->addTriangle(Triangle(br1, br2, br6, matWood)); benchRight->addTriangle(Triangle(br1, br6, br5, matWood));
-        benchRight->addTriangle(Triangle(br4, br3, br7, matWood)); benchRight->addTriangle(Triangle(br4, br7, br8, matWood));
-        benchRight->addTriangle(Triangle(br1, br4, br8, matWood)); benchRight->addTriangle(Triangle(br1, br8, br5, matWood));
-        benchRight->addTriangle(Triangle(br2, br3, br7, matWood)); benchRight->addTriangle(Triangle(br2, br7, br6, matWood));
-        benchRight->addTriangle(Triangle(br5, br6, br7, matWood)); benchRight->addTriangle(Triangle(br5, br7, br8, matWood));
-        scene.addObject(benchRight);
+    for(int fila=0; fila<8; fila++) {  // 8 fileiras agora
+        double zPos = 3 + fila*2.2;  // Começando mais perto
+        // LADO ESQUERDO
+        for(int banco=0; banco<3; banco++) {  // 3 bancos por lado
+            double xPos = 1.8 + banco*0.5;
+            auto b = make_shared<Mesh>(matBench);
+            double bW=1.0, bH=0.45, bD=0.25;  // Mais fino (bD menor)
+            Vector3 bC(xPos,0,zPos);
+            Vector3 v1(bC.x-bW,bC.y,bC.z-bD), v2(bC.x+bW,bC.y,bC.z-bD);
+            Vector3 v3(bC.x+bW,bC.y,bC.z+bD), v4(bC.x-bW,bC.y,bC.z+bD);
+            Vector3 v5(bC.x-bW,bC.y+bH,bC.z-bD), v6(bC.x+bW,bC.y+bH,bC.z-bD);
+            Vector3 v7(bC.x+bW,bC.y+bH,bC.z+bD), v8(bC.x-bW,bC.y+bH,bC.z+bD);
+            b->addTriangle(Triangle(v1,v2,v6,matBench)); b->addTriangle(Triangle(v1,v6,v5,matBench));
+            b->addTriangle(Triangle(v4,v3,v7,matBench)); b->addTriangle(Triangle(v4,v7,v8,matBench));
+            b->addTriangle(Triangle(v1,v4,v8,matBench)); b->addTriangle(Triangle(v1,v8,v5,matBench));
+            b->addTriangle(Triangle(v2,v3,v7,matBench)); b->addTriangle(Triangle(v2,v7,v6,matBench));
+            b->addTriangle(Triangle(v5,v6,v7,matBench)); b->addTriangle(Triangle(v5,v7,v8,matBench));
+            scene.addObject(b);
+        }
+        // LADO DIREITO
+        for(int banco=0; banco<3; banco++) {
+            double xPos = 9.2 + banco*0.5;
+            auto b = make_shared<Mesh>(matBench);
+            double bW=1.0, bH=0.45, bD=0.25;
+            Vector3 bC(xPos,0,zPos);
+            Vector3 v1(bC.x-bW,bC.y,bC.z-bD), v2(bC.x+bW,bC.y,bC.z-bD);
+            Vector3 v3(bC.x+bW,bC.y,bC.z+bD), v4(bC.x-bW,bC.y,bC.z+bD);
+            Vector3 v5(bC.x-bW,bC.y+bH,bC.z-bD), v6(bC.x+bW,bC.y+bH,bC.z-bD);
+            Vector3 v7(bC.x+bW,bC.y+bH,bC.z+bD), v8(bC.x-bW,bC.y+bH,bC.z+bD);
+            b->addTriangle(Triangle(v1,v2,v6,matBench)); b->addTriangle(Triangle(v1,v6,v5,matBench));
+            b->addTriangle(Triangle(v4,v3,v7,matBench)); b->addTriangle(Triangle(v4,v7,v8,matBench));
+            b->addTriangle(Triangle(v1,v4,v8,matBench)); b->addTriangle(Triangle(v1,v8,v5,matBench));
+            b->addTriangle(Triangle(v2,v3,v7,matBench)); b->addTriangle(Triangle(v2,v7,v6,matBench));
+            b->addTriangle(Triangle(v5,v6,v7,matBench)); b->addTriangle(Triangle(v5,v7,v8,matBench));
+            scene.addObject(b);
+        }
     }
     
-    cout << "Criando janelas..." << endl;
+    // JANELA EM ARCO GOTICO (não esfera!)
+    cout << "Criando janela..." << endl;
     
-    // ============ JANELAS (simuladas com planos translúcidos) ============
+    // Moldura esquerda
+    scene.addObject(make_shared<Cylinder>(
+        Vector3(5.3,3,19.8), 0.08, 2.5,
+        Vector3(0,1,0), matFrame
+    ));
     
-    // Janela esquerda
-    auto windowLeft = make_shared<Sphere>(
-        Vector3(1, 5, 17),  // Alta na parede
-        0.8,
-        matWindow
-    );
-    scene.addObject(windowLeft);
+    // Moldura direita
+    scene.addObject(make_shared<Cylinder>(
+        Vector3(6.7,3,19.8), 0.08, 2.5,
+        Vector3(0,1,0), matFrame
+    ));
     
-    // Janela direita
-    auto windowRight = make_shared<Sphere>(
-        Vector3(11, 5, 17),
-        0.8,
-        matWindow
-    );
-    scene.addObject(windowRight);
+    // Base da janela
+    scene.addObject(make_shared<Cylinder>(
+        Vector3(6,2.8,19.8), 0.08, 0.7,
+        Vector3(1,0,0), matFrame
+    ));
     
-    // ============ LUZ VERMELHA (vela ao lado do altar) ============
+    // Arco gótico (dois cilindros inclinados formando ponta)
+    scene.addObject(make_shared<Cylinder>(
+        Vector3(5.5,5.2,19.8), 0.08, 1.0,
+        Vector3(0.5,0.866,0), matFrame  // 60 graus
+    ));
+    scene.addObject(make_shared<Cylinder>(
+        Vector3(6.5,5.2,19.8), 0.08, 1.0,
+        Vector3(-0.5,0.866,0), matFrame  // -60 graus
+    ));
     
-    // Suporte da vela (cilindro)
-    auto candleStand = make_shared<Cylinder>(
-        Vector3(8, 0, 16.5),
-        0.15,
-        1.2,
-        Vector3(0, 1, 0),
-        matWood
-    );
-    scene.addObject(candleStand);
+    // Vitral (planos coloridos dentro da janela)
+    auto vitral = make_shared<Mesh>(matWindow);
+    Vector3 vb1(5.4, 3.0, 19.75), vb2(6.6, 3.0, 19.75);
+    Vector3 vb3(6.6, 5.0, 19.75), vb4(5.4, 5.0, 19.75);
+    Vector3 vtop(6.0, 5.8, 19.75);
     
-    // Vela (esfera vermelha brilhante)
-    auto candle = make_shared<Sphere>(
-        Vector3(8, 1.3, 16.5),
-        0.12,
-        matRedLight
-    );
-    scene.addObject(candle);
+    vitral->addTriangle(Triangle(vb1, vb2, vb3, matWindow));
+    vitral->addTriangle(Triangle(vb1, vb3, vb4, matWindow));
+    vitral->addTriangle(Triangle(vb4, vb3, vtop, matWindow));
+    scene.addObject(vitral);
     
-    cout << "Objetos criados: " << scene.objects.size() << endl;
+    // VELA VERMELHA DETALHADA
+    cout << "Criando vela..." << endl;
     
-    // ============ ILUMINAÇÃO ============
+    // Base tripla da vela (3 níveis)
+    scene.addObject(make_shared<Cylinder>(Vector3(8,0,17.5), 0.15, 0.15, Vector3(0,1,0), matCandleBase));
+    scene.addObject(make_shared<Cylinder>(Vector3(8,0.15,17.5), 0.12, 0.15, Vector3(0,1,0), matCandleBase));
+    scene.addObject(make_shared<Cylinder>(Vector3(8,0.30,17.5), 0.09, 0.15, Vector3(0,1,0), matCandleBase));
     
-    cout << "Configurando iluminação..." << endl;
+    // Haste central
+    scene.addObject(make_shared<Cylinder>(Vector3(8,0.45,17.5), 0.05, 0.6, Vector3(0,1,0), matCandleBase));
     
-    // Luz ambiente (suave)
-    auto ambient = make_shared<AmbientLight>(Color(0.25, 0.25, 0.28));
-    scene.setAmbientLight(ambient);
+    // Suporte do vidro
+    scene.addObject(make_shared<Cylinder>(Vector3(8,1.05,17.5), 0.08, 0.05, Vector3(0,1,0), matCandleBase));
     
-    // LUZ DO SOL (direcional, vindo das janelas)
-    // Simula luz entrando pelas janelas laterais
-    auto sunLight = make_shared<DirectionalLight>(
-        Vector3(-0.3, -0.6, 0.2),  // Ângulo diagonal
-        Color(0.9, 0.85, 0.7)  // Luz amarelada do sol
-    );
-    scene.addLight(sunLight);
+    // Vidro protetor (cilindro transparente vermelho)
+    scene.addObject(make_shared<Cylinder>(Vector3(8,1.1,17.5), 0.12, 0.3, Vector3(0,1,0), matCandle));
     
-    // Luz do sol adicional (mais suave, de outro ângulo)
-    auto sunLight2 = make_shared<DirectionalLight>(
-        Vector3(0.3, -0.6, 0.2),
-        Color(0.6, 0.55, 0.45)
-    );
-    scene.addLight(sunLight2);
+    // Chama vermelha (esfera brilhante)
+    scene.addObject(make_shared<Sphere>(Vector3(8,1.25,17.5), 0.08, matCandle));
     
-    // LUZ VERMELHA DA VELA
-    auto redCandle = make_shared<PointLight>(
-        Vector3(8, 1.3, 16.5),  // Posição da vela
-        Color(1.2, 0.15, 0.1)   // Vermelho intenso
-    );
-    scene.addLight(redCandle);
+    // Topo do vidro
+    scene.addObject(make_shared<Sphere>(Vector3(8,1.4,17.5), 0.12, matCandle));
     
-    // Luz suave geral (ilumina o altar)
-    auto altarLight = make_shared<PointLight>(
-        Vector3(6, 6, 17),
-        Color(0.4, 0.4, 0.45)
-    );
-    scene.addLight(altarLight);
+    cout << "Objetos: " << scene.objects.size() << endl;
     
-    cout << "Luzes configuradas!" << endl;
+    // ILUMINACAO
+    scene.setAmbientLight(make_shared<AmbientLight>(Color(0.15,0.15,0.18)));
+    scene.addLight(make_shared<DirectionalLight>(Vector3(0,-0.6,0.4), Color(0.7,0.65,0.5)));
+    scene.addLight(make_shared<PointLight>(Vector3(6,5,17), Color(0.5,0.5,0.55)));
+    scene.addLight(make_shared<PointLight>(Vector3(8,1.25,17.5), Color(0.8,0.15,0.1))); // Luz da vela
+    scene.addLight(make_shared<PointLight>(Vector3(6,6,10), Color(0.3,0.3,0.35)));
     
-    // ============ CÂMERA ============
+    cout << "Luzes: 5" << endl;
     
-    cout << "\nConfigurando câmera..." << endl;
+    // CAMERA
+    Camera camera(Vector3(6,1.8,12), Vector3(6,1.5,18), Vector3(0,1,0), 1.0, 6.0, 4.5, 800, 600);
+    cout << "Camera proxima do altar" << endl;
     
-    // Câmera posicionada na entrada, olhando para o altar
-    Camera camera(
-        Vector3(6, 2, 1),      // Eye - na entrada, altura dos olhos
-        Vector3(6, 2, 17),     // At - olhando para o altar
-        Vector3(0, 1, 0),      // Up
-        1.0,                   // distância focal
-        8.0,                   // largura da janela
-        8.0,                   // altura da janela
-        800,                   // largura da imagem (maior resolução para mais detalhes)
-        600                    // altura da imagem
-    );
-    
-    cout << "Câmera configurada!" << endl;
-    cout << "  Eye: " << camera.eye << endl;
-    cout << "  At: " << camera.at << endl;
-    cout << "  Resolução: " << camera.imageWidth << "x" << camera.imageHeight << endl;
-    
-    // ============ RENDERIZAÇÃO ============
-    
+    // RENDERIZAR
     cout << "\n========================================" << endl;
-    cout << "INICIANDO RENDERIZAÇÃO" << endl;
+    cout << "RENDERIZANDO..." << endl;
     cout << "========================================" << endl;
     
     Renderer renderer(scene, camera);
     renderer.render("output/capela.ppm");
     
-    cout << "\n========================================" << endl;
-    cout << "RENDERIZAÇÃO COMPLETA!" << endl;
-    cout << "========================================" << endl;
-    
-    cout << "\nRequisitos atendidos:" << endl;
-    cout << "  [✓] Coerência temática (Capela religiosa)" << endl;
-    cout << "  [✓] Primeiro octante (x, y, z > 0)" << endl;
-    cout << "  [✓] Objetos: Esfera, Cilindro, Malha" << endl;
-    cout << "  [✓] Materiais: 7 materiais distintos" << endl;
-    cout << "  [✓] Transformações" << endl;
-    cout << "  [✓] Luz direcional (sol das janelas)" << endl;
-    cout << "  [✓] Luz pontual vermelha (vela)" << endl;
-    cout << "  [✓] Luz ambiente" << endl;
-    cout << "  [✓] Câmera perspectiva" << endl;
-    cout << "  [✓] Sombras" << endl;
-    cout << "  [✓] Resolução 800x600" << endl;
-    
-    cout << "\nCena especial:" << endl;
-    cout << "  - Luz do sol entrando pelas janelas" << endl;
-    cout << "  - Luz vermelha da vela ao lado do altar" << endl;
-    cout << "  - Ostensório dourado brilhante" << endl;
-    cout << "  - Bancos de madeira" << endl;
-    
-    cout << "\nArquivo gerado: output/capela.ppm" << endl;
-    cout << "Converta para PNG: convert output/capela.ppm output/capela.png" << endl;
+    cout << "\nCOMPLETO!" << endl;
+    cout << "Arquivo: output/capela.ppm" << endl;
+    cout << "Converter: magick output/capela.ppm output/capela.png" << endl;
     
     return 0;
 }
