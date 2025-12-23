@@ -92,18 +92,18 @@ int main() {
         double angle = i * 2*M_PI/20;
         scene.addObject(make_shared<Sphere>(
             Vector3(ostCenter.x + 0.16*cos(angle), ostCenter.y + 0.16*sin(angle), ostCenter.z),
-            0.01, matGold
+            0.015, matGold  // Aumentado de 0.01 para 0.015
         ));
     }
     
-    // 7 RAIOS formando heptágono VERTICAL (plano XY)
+    // 7 RAIOS GROSSOS formando heptágono VERTICAL (plano XY)
     for(int i=0; i<7; i++) {
         double angle = i * 2*M_PI/7;
         
         // Raios começam após o anel e vão até 0.35
-        for(int j=0; j<=4; j++) {
-            double r = 0.18 + j*0.04;
-            double size = 0.022 - j*0.003;
+        for(int j=0; j<=5; j++) {  // Aumentado de 4 para 5 esferas
+            double r = 0.18 + j*0.035;  // Espaçamento ligeiramente menor
+            double size = 0.035 - j*0.004;  // MUITO MAIOR! Era 0.022
             scene.addObject(make_shared<Sphere>(
                 Vector3(ostCenter.x + r*cos(angle), ostCenter.y + r*sin(angle), ostCenter.z),
                 size, matGold
@@ -111,12 +111,12 @@ int main() {
         }
     }
     
-    // Esferas maiores nos vértices do heptágono VERTICAL
+    // Esferas GRANDES nos vértices do heptágono VERTICAL
     for(int i=0; i<7; i++) {
         double angle = i * 2*M_PI/7;
         scene.addObject(make_shared<Sphere>(
-            Vector3(ostCenter.x + 0.34*cos(angle), ostCenter.y + 0.34*sin(angle), ostCenter.z),
-            0.025, matGold
+            Vector3(ostCenter.x + 0.35*cos(angle), ostCenter.y + 0.35*sin(angle), ostCenter.z),
+            0.04, matGold  // Aumentado de 0.025 para 0.04
         ));
     }
     
