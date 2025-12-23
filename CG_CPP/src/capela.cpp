@@ -234,18 +234,18 @@ int main() {
     
     cout << "Objetos: " << scene.objects.size() << endl;
     
-    scene.setAmbientLight(make_shared<AmbientLight>(Color(0.7,0.7,0.7)));  // LUZ AMBIENTE MAXIMA!
-    scene.addLight(make_shared<DirectionalLight>(Vector3(0,-0.6,0.4), Color(0.3,0.3,0.3)));  // Reduzida
+    scene.setAmbientLight(make_shared<AmbientLight>(Color(0.3,0.3,0.3)));  // Reduzida de 0.7
+    scene.addLight(make_shared<DirectionalLight>(Vector3(0,-0.6,0.4), Color(0.3,0.3,0.3)));
     scene.addLight(make_shared<PointLight>(Vector3(6,5,17), Color(0.3,0.3,0.3)));
-    scene.addLight(make_shared<PointLight>(Vector3(8,1.25,17.5), Color(0.9,0.2,0.15)));
+    scene.addLight(make_shared<PointLight>(Vector3(8,1.25,17.5), Color(2.0,0.5,0.3)));  // VELA VERMELHA FORTE!
     scene.addLight(make_shared<PointLight>(Vector3(6,6,10), Color(0.2,0.2,0.2)));
     
     // Luzes suaves nos bancos
-    scene.addLight(make_shared<PointLight>(Vector3(3,2,8), Color(0.3,0.3,0.3)));
-    scene.addLight(make_shared<PointLight>(Vector3(9,2,8), Color(0.3,0.3,0.3)));
+    scene.addLight(make_shared<PointLight>(Vector3(3,2,8), Color(0.2,0.2,0.2)));
+    scene.addLight(make_shared<PointLight>(Vector3(9,2,8), Color(0.2,0.2,0.2)));
     
-    // LUZ NO VITRAL (suave, sem spotlight)
-    scene.addLight(make_shared<PointLight>(Vector3(6, 4, 19), Color(0.4,0.4,0.4)));
+    // LUZ NO VITRAL (suave)
+    scene.addLight(make_shared<PointLight>(Vector3(6, 4, 19), Color(0.3,0.3,0.3)));
     
     cout << "Luzes: 8 (extra para iluminar texturas)" << endl;
     
