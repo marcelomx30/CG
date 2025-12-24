@@ -1,0 +1,25 @@
+# Executáveis
+raycaster
+interactive
+capela
+viewer
+
+# Objetos
+obj/
+*.o
+
+# Temporários
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# Sistema
+.DS_Store
+
+# Build
+build/
