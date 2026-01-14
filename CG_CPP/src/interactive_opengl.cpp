@@ -16,6 +16,9 @@ using namespace std;
 const int WIDTH = 800;
 const int HEIGHT = 600;
 
+// Estado da vela
+bool candleLit = true;
+
 struct Camera {
     float x, y, z, yaw, pitch;
     Camera() : x(6.0f), y(1.8f), z(2.0f), yaw(0.0f), pitch(0.0f) {}
@@ -195,17 +198,23 @@ void drawScene(GLuint wood, GLuint glass, GLuint wall) {
     }
 
     // Vela (CILINDRO + CONE obrigatórios)
-    glColor3f(0.8f, 0.2f, 0.15f);
+    if(candleLit) {
+        glColor3f(0.8f, 0.2f, 0.15f);
+    } else {
+        glColor3f(0.3f, 0.3f, 0.3f); // Vela apagada (cinza)
+    }
     drawCylinder(8, 0, 17.5, 0.12, 1.0);
 
-    // Chama da vela (CONE obrigatório)
-    glColor3f(1.0f, 0.8f, 0.0f);
-    drawCone(8, 1.0, 17.5, 0.08, 0.3);
+    // Chama da vela (CONE obrigatório) - só aparece se acesa
+    if(candleLit) {
+        glColor3f(1.0f, 0.8f, 0.0f);
+        drawCone(8, 1.0, 17.5, 0.08, 0.3);
+    }
 }
 
 struct Pickable { string name; float x,y,z,r; };
 
-string pick(int mx, int my) {
+string pick(int mx, int my, bool& toggleCandle) {
     vector<Pickable> objs = {
         {"Altar", 6,0.4f,18,2},
         {"Ostensório", 6,1.4f,18,0.3f},
@@ -235,11 +244,17 @@ string pick(int mx, int my) {
     float minDist = 999999;
     string closest = "";
 
+    toggleCandle = false;
     for(auto& o : objs) {
         float d = (click - Vector3(o.x, o.y, o.z)).length();
         if(d < o.r * 1.5f && d < minDist) {
             minDist = d;
             closest = o.name;
+
+            // Se clicou na vela, marca para alternar estado
+            if(o.name == "Vela") {
+                toggleCandle = true;
+            }
         }
     }
 
@@ -333,7 +348,22 @@ int main() {
                 cam.apply();
                 drawScene(wood, glass, wall);
                 glFinish();
-                cout << "🎯 PICKING: " << pick(e.button.x, e.button.y) << endl;
+
+                bool shouldToggle = false;
+                string pickedObj = pick(e.button.x, e.button.y, shouldToggle);
+                cout << "🎯 PICKING: " << pickedObj;
+
+                if(shouldToggle) {
+                    candleLit = !candleLit;
+                    if(candleLit) {
+                        glEnable(GL_LIGHT1);
+                        cout << " → 🕯️ Vela ACESA";
+                    } else {
+                        glDisable(GL_LIGHT1);
+                        cout << " → 💨 Vela APAGADA";
+                    }
+                }
+                cout << endl;
             }
 
             if(e.type == SDL_KEYDOWN) {
