@@ -34,29 +34,31 @@ bool Sphere::intersect(const Ray& ray, HitRecord& rec) const {
     rec.point = ray.at(t);
     rec.normal = (rec.point - center).normalized();
     rec.material = material;
-    
+    rec.object = this;
+
     return true;
 }
 
 // PLANE INTERSECTION
 bool Plane::intersect(const Ray& ray, HitRecord& rec) const {
     double denom = normal.dot(ray.direction);
-    
+
     if (std::abs(denom) < EPSILON) {
         return false;
     }
-    
+
     double t = (point - ray.origin).dot(normal) / denom;
-    
+
     if (t < EPSILON) {
         return false;
     }
-    
+
     rec.t = t;
     rec.point = ray.at(t);
     rec.normal = normal;
     rec.material = material;
-    
+    rec.object = this;
+
     return true;
 }
 
@@ -95,6 +97,7 @@ bool Cylinder::intersect(const Ray& ray, HitRecord& rec) const {
             Vector3 pointOnAxis = baseCenter + axis * projOnAxis;
             rec.normal = (point - pointOnAxis).normalized();
             rec.material = material;
+            rec.object = this;
             return true;
         }
     }
@@ -134,12 +137,13 @@ bool Cone::intersect(const Ray& ray, HitRecord& rec) const {
         if (projOnAxis >= 0 && projOnAxis <= height) {
             rec.t = t;
             rec.point = point;
-            
+
             Vector3 pointOnAxis = baseCenter + axis * projOnAxis;
             Vector3 radial = (point - pointOnAxis).normalized();
             Vector3 tangent = axis;
             rec.normal = (radial - tangent * (radius / height)).normalized();
             rec.material = material;
+            rec.object = this;
             return true;
         }
     }
@@ -183,7 +187,8 @@ bool Triangle::intersect(const Ray& ray, HitRecord& rec) const {
     rec.point = ray.at(t);
     rec.normal = normal;
     rec.material = material;
-    
+    rec.object = this;
+
     return true;
 }
 
@@ -192,14 +197,15 @@ bool Mesh::intersect(const Ray& ray, HitRecord& rec) const {
     bool hitAnything = false;
     double closest = std::numeric_limits<double>::max();
     HitRecord tempRec;
-    
+
     for (const auto& triangle : triangles) {
         if (triangle.intersect(ray, tempRec) && tempRec.t < closest) {
             closest = tempRec.t;
             rec = tempRec;
+            rec.object = this;  // Aponta para a Mesh, não o triângulo
             hitAnything = true;
         }
     }
-    
+
     return hitAnything;
 }

@@ -202,3 +202,33 @@ void Renderer::savePPM(const std::string& filename, const std::vector<std::vecto
     file.close();
     std::cout << "Imagem salva: " << filename << std::endl;
 }
+
+// ============ PICKING ============
+
+PickResult Scene::pick(const Camera& camera, int pixelX, int pixelY) const {
+    PickResult result;
+
+    // Verifica se as coordenadas estão dentro dos limites
+    if (pixelX < 0 || pixelX >= camera.imageWidth || pixelY < 0 || pixelY >= camera.imageHeight) {
+        return result;  // hit = false
+    }
+
+    // Gera raio para o pixel especificado
+    Ray ray = camera.getRay(pixelX, pixelY);
+
+    // Faz interseção com a cena
+    HitRecord rec;
+    if (intersect(ray, rec)) {
+        result.hit = true;
+        result.object = rec.object;
+        result.hitPoint = rec.point;
+        result.distance = rec.t;
+
+        if (rec.object) {
+            result.objectType = rec.object->getType();
+            result.objectName = rec.object->name;
+        }
+    }
+
+    return result;
+}

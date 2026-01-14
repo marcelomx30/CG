@@ -11,12 +11,9 @@ OBJ_DIR = obj
 BIN_DIR = .
 
 # Arquivos fonte
-SOURCES = $(filter-out $(SRC_DIR)/main.cpp $(SRC_DIR)/capela.cpp $(SRC_DIR)/capela_textured.cpp $(SRC_DIR)/pick_demo.cpp $(SRC_DIR)/projection_demo.cpp $(SRC_DIR)/transform_demo.cpp $(SRC_DIR)/interactive_opengl.cpp, $(wildcard $(SRC_DIR)/*.cpp))
+SOURCES = $(filter-out $(SRC_DIR)/pick_demo.cpp $(SRC_DIR)/projection_demo.cpp $(SRC_DIR)/transform_demo.cpp $(SRC_DIR)/interactive_opengl.cpp, $(wildcard $(SRC_DIR)/*.cpp))
 OBJECTS = $(SOURCES:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
-EXECUTABLE = $(BIN_DIR)/raycaster
 INTERACTIVE_GL = $(BIN_DIR)/interactive_opengl
-CAPELA = $(BIN_DIR)/capela
-CAPELA_TEX = $(BIN_DIR)/capela_textured
 PICKDEMO = $(BIN_DIR)/pick_demo
 PROJDEMO = $(BIN_DIR)/projection_demo
 TRANSFORMDEMO = $(BIN_DIR)/transform_demo
@@ -29,12 +26,7 @@ SDL2_LIBS = $(shell pkg-config --libs sdl2)
 OPENGL_LIBS = -lGL -lGLU
 
 # Regra principal
-all: $(EXECUTABLE) $(INTERACTIVE_GL) $(CAPELA) $(CAPELA_TEX) $(PICKDEMO) $(PROJDEMO) $(TRANSFORMDEMO)
-
-# Criar executável principal
-$(EXECUTABLE): $(OBJECTS) $(OBJ_DIR)/main.o | $(BIN_DIR)
-	$(CXX) $(CXXFLAGS) $(OBJECTS) $(OBJ_DIR)/main.o -o $@ $(LDFLAGS)
-	@echo "Build completo! Executável: $(EXECUTABLE)"
+all: $(INTERACTIVE_GL) $(PICKDEMO) $(PROJDEMO) $(TRANSFORMDEMO)
 
 # Criar executável interativo OpenGL
 $(INTERACTIVE_GL): $(OBJ_DIR)/interactive_opengl.o | $(BIN_DIR)
@@ -44,16 +36,6 @@ $(INTERACTIVE_GL): $(OBJ_DIR)/interactive_opengl.o | $(BIN_DIR)
 # Compilar interactive_opengl.o com flags SDL2 e OpenGL
 $(OBJ_DIR)/interactive_opengl.o: $(SRC_DIR)/interactive_opengl.cpp | $(OBJ_DIR)
 	$(CXX) $(CXXFLAGS) $(SDL2_CFLAGS) -c $< -o $@
-
-# Criar executável da capela
-$(CAPELA): $(OBJECTS) $(OBJ_DIR)/capela.o | $(BIN_DIR)
-	$(CXX) $(CXXFLAGS) $(OBJECTS) $(OBJ_DIR)/capela.o -o $@ $(LDFLAGS)
-	@echo "Build completo! Executável da capela: $(CAPELA)"
-
-# Criar executável da capela com texturas de imagem
-$(CAPELA_TEX): $(OBJECTS) $(OBJ_DIR)/capela_textured.o | $(BIN_DIR)
-	$(CXX) $(CXXFLAGS) $(OBJECTS) $(OBJ_DIR)/capela_textured.o -o $@ $(LDFLAGS)
-	@echo "Build completo! Executável da capela com texturas: $(CAPELA_TEX)"
 
 # Criar executável de demonstração de picking
 $(PICKDEMO): $(OBJECTS) $(OBJ_DIR)/pick_demo.o | $(BIN_DIR)
@@ -83,26 +65,16 @@ $(BIN_DIR):
 
 # Limpar arquivos gerados
 clean:
-	rm -rf $(OBJ_DIR) $(EXECUTABLE) $(INTERACTIVE_GL) $(CAPELA) $(CAPELA_TEX) $(PICKDEMO) $(PROJDEMO) $(TRANSFORMDEMO)
+	rm -rf $(OBJ_DIR) $(INTERACTIVE_GL) $(PICKDEMO) $(PROJDEMO) $(TRANSFORMDEMO)
 	@echo "Arquivos limpos!"
 
-# Executar versão normal
-run: $(EXECUTABLE)
-	./$(EXECUTABLE)
-
-# Executar interface OpenGL interativa (WASD + Mouse + SOFTWARE RENDERING - SEM GPU!)
-run-opengl: $(INTERACTIVE_GL)
+# Executar interface OpenGL interativa (PRINCIPAL)
+run: $(INTERACTIVE_GL)
 	@echo "Iniciando OpenGL com SOFTWARE RENDERING (sem GPU)..."
-	@echo "Forçando software rendering via variáveis de ambiente..."
 	LIBGL_ALWAYS_SOFTWARE=1 MESA_GL_VERSION_OVERRIDE=2.1 ./$(INTERACTIVE_GL)
 
-# Executar cena da capela
-run-capela: $(CAPELA)
-	./$(CAPELA)
-
-# Executar cena da capela com texturas de imagem
-run-capela-textured: $(CAPELA_TEX)
-	./$(CAPELA_TEX)
+# Alias para run
+run-opengl: run
 
 # Executar demonstração de picking
 run-pick: $(PICKDEMO)
@@ -123,28 +95,23 @@ help:
 	@echo "Comandos disponíveis:"
 	@echo "  make                       - Compila todos os programas"
 	@echo "  make clean                 - Remove arquivos compilados"
-	@echo "  make run                   - Cena com textura xadrez"
-	@echo "  make run-opengl            - 🎮 INTERFACE OPENGL (WASD + Mouse Picking - SOFTWARE RENDERING SEM GPU)"
-	@echo "  make run-capela            - Capela com texturas procedurais"
-	@echo "  make run-capela-textured   - Capela com texturas de imagem"
+	@echo "  make run                   - 🎮 INTERFACE OPENGL (WASD + Mouse Picking - SOFTWARE RENDERING SEM GPU)"
+	@echo "  make run-opengl            - Alias para 'make run'"
 	@echo "  make run-pick              - Demonstração de picking"
 	@echo "  make run-projections       - Demonstração de projeções"
 	@echo "  make run-transforms        - Demonstração de transformações"
 	@echo "  make help                  - Mostra esta ajuda"
 	@echo ""
 	@echo "Programas disponíveis:"
-	@echo "  raycaster            - Cena com textura xadrez"
-	@echo "  interactive_opengl   - 🎮 INTERFACE OPENGL (WASD + Mouse - SOFTWARE RENDERING SEM GPU)"
-	@echo "  capela               - Capela procedural"
-	@echo "  capela_textured      - Capela com texturas de imagem"
-	@echo "  pick_demo            - Demo picking"
-	@echo "  projection_demo      - Demo projeções"
-	@echo "  transform_demo       - Demo transformações"
+	@echo "  interactive_opengl   - 🎮 Interface principal OpenGL (software rendering)"
+	@echo "  pick_demo            - Demo de picking"
+	@echo "  projection_demo      - Demo de projeções"
+	@echo "  transform_demo       - Demo de transformações"
 	@echo ""
 	@echo "📝 Como trocar texturas:"
 	@echo "  1. Coloque suas imagens em textures/"
-	@echo "  2. Renomeie para: wood.jpg e stained_glass.jpg"
-	@echo "  3. Execute: make run-capela-textured"
+	@echo "  2. Renomeie para: wood.jpg, stained_glass.jpg, wall.jpg"
+	@echo "  3. Execute: make run"
 	@echo ""
 	@echo "🎮 Controles OpenGL:"
 	@echo "  W/A/S/D - Mover câmera"
@@ -153,4 +120,4 @@ help:
 	@echo "  Mouse   - Click para PICKING"
 	@echo "  ESC     - Sair"
 
-.PHONY: all clean run run-opengl run-capela run-capela-textured run-pick run-projections run-transforms help
+.PHONY: all clean run run-opengl run-pick run-projections run-transforms help

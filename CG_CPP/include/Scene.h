@@ -7,6 +7,33 @@
 #include "Color.h"
 #include <vector>
 #include <memory>
+#include <string>
+#include <sstream>
+
+// Estrutura para resultado do picking
+struct PickResult {
+    bool hit;
+    const Object* object;
+    Vector3 hitPoint;
+    double distance;
+    std::string objectType;
+    std::string objectName;
+
+    PickResult() : hit(false), object(nullptr), distance(-1.0) {}
+
+    std::string toString() const {
+        if (!hit) {
+            return "Nenhum objeto atingido";
+        }
+        std::stringstream ss;
+        ss << "Objeto atingido:\n"
+           << "  Tipo: " << objectType << "\n"
+           << "  Nome: " << objectName << "\n"
+           << "  Ponto: (" << hitPoint.x << ", " << hitPoint.y << ", " << hitPoint.z << ")\n"
+           << "  Distância: " << distance;
+        return ss.str();
+    }
+};
 
 class Scene {
 public:
@@ -27,6 +54,9 @@ public:
     bool isInShadow(const Vector3& point, const Vector3& lightPos) const;
     Color computeLighting(const HitRecord& hit, const Ray& ray) const;
     Color traceRay(const Ray& ray) const;
+
+    // Função de picking: retorna objeto atingido em coordenadas de pixel
+    PickResult pick(const Camera& camera, int pixelX, int pixelY) const;
 };
 
 class Renderer {
