@@ -106,7 +106,7 @@ void drawCone(float x, float y, float z, float r, float h) {
     glPopMatrix();
 }
 
-void drawScene(GLuint wood, GLuint glass) {
+void drawScene(GLuint wood, GLuint glass, GLuint wall) {
     // Chão (sem textura)
     glColor3f(0.6f, 0.5f, 0.4f);
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -114,32 +114,32 @@ void drawScene(GLuint wood, GLuint glass) {
     glVertex3f(0,0,0); glVertex3f(12,0,0); glVertex3f(12,0,20); glVertex3f(0,0,20);
     glEnd();
 
-    // Paredes com textura de madeira
-    glBindTexture(GL_TEXTURE_2D, wood);
+    // Paredes com textura própria
+    glBindTexture(GL_TEXTURE_2D, wall);
     glColor3f(1.0f, 1.0f, 1.0f);
 
-    // Parede fundo
+    // Parede fundo (textura invertida verticalmente)
     glBegin(GL_QUADS);
-    glTexCoord2f(0,0); glVertex3f(0,0,20);
-    glTexCoord2f(3,0); glVertex3f(12,0,20);
-    glTexCoord2f(3,2); glVertex3f(12,8,20);
-    glTexCoord2f(0,2); glVertex3f(0,8,20);
+    glTexCoord2f(0,2); glVertex3f(0,0,20);
+    glTexCoord2f(3,2); glVertex3f(12,0,20);
+    glTexCoord2f(3,0); glVertex3f(12,8,20);
+    glTexCoord2f(0,0); glVertex3f(0,8,20);
     glEnd();
 
-    // Parede esquerda
+    // Parede esquerda (textura invertida verticalmente)
     glBegin(GL_QUADS);
-    glTexCoord2f(0,0); glVertex3f(0,0,0);
-    glTexCoord2f(5,0); glVertex3f(0,0,20);
-    glTexCoord2f(5,2); glVertex3f(0,8,20);
-    glTexCoord2f(0,2); glVertex3f(0,8,0);
+    glTexCoord2f(0,2); glVertex3f(0,0,0);
+    glTexCoord2f(5,2); glVertex3f(0,0,20);
+    glTexCoord2f(5,0); glVertex3f(0,8,20);
+    glTexCoord2f(0,0); glVertex3f(0,8,0);
     glEnd();
 
-    // Parede direita
+    // Parede direita (textura invertida verticalmente)
     glBegin(GL_QUADS);
-    glTexCoord2f(0,0); glVertex3f(12,0,0);
-    glTexCoord2f(5,0); glVertex3f(12,0,20);
-    glTexCoord2f(5,2); glVertex3f(12,8,20);
-    glTexCoord2f(0,2); glVertex3f(12,8,0);
+    glTexCoord2f(0,2); glVertex3f(12,0,0);
+    glTexCoord2f(5,2); glVertex3f(12,0,20);
+    glTexCoord2f(5,0); glVertex3f(12,8,20);
+    glTexCoord2f(0,0); glVertex3f(12,8,0);
     glEnd();
 
     // Teto (sem textura)
@@ -186,12 +186,12 @@ void drawScene(GLuint wood, GLuint glass) {
     glColor3f(0.9f, 0.75f, 0.3f);
     drawCylinder(6, 0.8, 18, 0.15, 0.3);
 
-    // Raios dourados ao redor (no plano vertical YZ - em pé)
+    // Raios dourados ao redor (no plano vertical XY - virado para frente)
     for(int i = 0; i < 8; i++) {
         float angle = i * 2 * M_PI / 8;
-        float offsetY = 0.25f * cos(angle);  // Varia no eixo Y (vertical)
-        float offsetZ = 0.25f * sin(angle);  // Varia no eixo Z (profundidade)
-        drawSphere(6, 1.4 + offsetY, 18 + offsetZ, 0.025);
+        float offsetX = 0.25f * cos(angle);  // Varia no eixo X (horizontal)
+        float offsetY = 0.25f * sin(angle);  // Varia no eixo Y (vertical)
+        drawSphere(6 + offsetX, 1.4 + offsetY, 18, 0.025);
     }
 
     // Vela (CILINDRO + CONE obrigatórios)
@@ -312,9 +312,11 @@ int main() {
 
     GLuint wood = loadTexture("textures/wood.jpg");
     GLuint glass = loadTexture("textures/stained_glass.jpg");
+    GLuint wall = loadTexture("textures/wall.jpg");
 
     if(wood) cout << "✓ Textura madeira carregada" << endl;
     if(glass) cout << "✓ Textura vitral carregada" << endl;
+    if(wall) cout << "✓ Textura parede carregada" << endl;
     cout << "\n✓ Cena possui: ESFERA + CILINDRO + CONE + MALHA (requisitos)\n" << endl;
 
     Camera cam;
@@ -329,7 +331,7 @@ int main() {
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                 glLoadIdentity();
                 cam.apply();
-                drawScene(wood, glass);
+                drawScene(wood, glass, wall);
                 glFinish();
                 cout << "🎯 PICKING: " << pick(e.button.x, e.button.y) << endl;
             }
@@ -354,12 +356,13 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glLoadIdentity();
         cam.apply();
-        drawScene(wood, glass);
+        drawScene(wood, glass, wall);
         SDL_GL_SwapWindow(win);
     }
 
     glDeleteTextures(1, &wood);
     glDeleteTextures(1, &glass);
+    glDeleteTextures(1, &wall);
     SDL_GL_DeleteContext(ctx);
     SDL_DestroyWindow(win);
     SDL_Quit();
