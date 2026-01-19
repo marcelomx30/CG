@@ -31,8 +31,8 @@ int main() {
 
     // ============ TRANSLAÇÃO ============
     cout << "\n1. TRANSLACAO" << endl;
-    cout << "   Mover por (5, 2, -1)" << endl;
-    Matrix4x4 translation = Matrix4x4::translation(5, 2, -1);
+    cout << "   Mover por (5, 2, 1)" << endl;
+    Matrix4x4 translation = Matrix4x4::translation(5, 2, 1);
     Vector3 translated = translation.transformPoint(point);
     printVector("   Resultado", translated);
     printSeparator();

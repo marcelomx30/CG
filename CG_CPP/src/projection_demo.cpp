@@ -51,7 +51,7 @@ int main() {
     Scene scene = createDemoScene();
 
     // Configuração da câmera (mesma posição para todas as projeções)
-    Vector3 eye(10, 4, -2);
+    Vector3 eye(10, 4, 2);
     Vector3 at(5, 2, 5);
     Vector3 up(0, 1, 0);
     int resolution = 400;

@@ -2,7 +2,7 @@
 #include <cmath>
 
 Camera::Camera()
-    : eye(0, 0, 0), at(0, 0, -1), up(0, 1, 0),
+    : eye(0, 0, 0), at(0, 0, 1), up(0, 1, 0),
       d(1.0), viewWidth(2.0), viewHeight(2.0),
       imageWidth(500), imageHeight(500),
       projectionType(ProjectionType::PERSPECTIVE),

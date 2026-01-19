@@ -84,7 +84,7 @@ int main() {
 
     // Configura câmera
     Camera camera(
-        Vector3(10, 4, -2),    // eye
+        Vector3(10, 4, 2),    // eye
         Vector3(5, 2, 5),      // at
         Vector3(0, 1, 0),      // up
         3.0,                   // d
