@@ -29,8 +29,8 @@ OPENGL_LIBS = -lGL -lGLU
 all: $(INTERACTIVE_GL) $(PICKDEMO) $(PROJDEMO) $(TRANSFORMDEMO)
 
 # Criar executável interativo OpenGL
-$(INTERACTIVE_GL): $(OBJ_DIR)/interactive_opengl.o | $(BIN_DIR)
-	$(CXX) $(CXXFLAGS) $(SDL2_CFLAGS) $(OBJ_DIR)/interactive_opengl.o -o $@ $(LDFLAGS) $(SDL2_LIBS) $(OPENGL_LIBS)
+$(INTERACTIVE_GL): $(OBJ_DIR)/interactive_opengl.o $(OBJ_DIR)/Texture.o | $(BIN_DIR)
+	$(CXX) $(CXXFLAGS) $(SDL2_CFLAGS) $(OBJ_DIR)/interactive_opengl.o $(OBJ_DIR)/Texture.o -o $@ $(LDFLAGS) $(SDL2_LIBS) $(OPENGL_LIBS)
 	@echo "Build completo! Executável interativo OpenGL: $(INTERACTIVE_GL)"
 
 # Compilar interactive_opengl.o com flags SDL2 e OpenGL
