@@ -30,6 +30,10 @@ make run
 - **W/A/S/D** - Mover câmera
 - **Q/E** - Subir/Descer
 - **Setas** - Rotacionar câmera
+- **1** - Projeção Perspectiva (padrão)
+- **2** - Projeção Ortográfica
+- **3** - Projeção Oblíqua Cavalier (45°, fator 1.0)
+- **4** - Projeção Oblíqua Cabinet (63.4°, fator 0.5)
 - **Mouse (clique)** - Picking de objetos (mostra nome e distância)
   - Clique na vela para **ligar/desligar** a luz
 - **ESC** - Sair
@@ -49,15 +53,11 @@ make run
 - Sistema de iluminação Phong + objetos emissivos
 - **Todas coordenadas positivas (X,Y,Z ≥ 0)**
 
-**🎯 Demonstração para o professor (3 planos de fuga):**
-```bash
-./projection_demo      # Gera 4 imagens PPM com 3 projeções diferentes
-                       # - Perspectiva
-                       # - Ortográfica
-                       # - Oblíqua (Cavalier e Cabinet)
-```
+**🎯 Demonstração dos 3 tipos de projeção:**
+- **Na cena principal**: Use as teclas **1, 2, 3, 4** para alternar entre projeções em tempo real
+- **Imagens PPM**: Execute `./projection_demo` para gerar 4 imagens com as projeções
 
-**Nota:** Transformações e picking já estão integrados na cena principal (`./interactive_opengl`)
+**Nota:** Transformações, picking e projeções estão todos integrados na cena principal (`./interactive_opengl`)
 
 ## 📝 TEXTURAS
 
@@ -88,15 +88,14 @@ Para trocar texturas:
 ## 📂 ARQUIVOS PRINCIPAIS
 
 ### Executáveis:
-- **`src/interactive_opengl.cpp`** - Ray tracer interativo na CPU (principal, 1100+ linhas)
+- **`src/interactive_opengl.cpp`** - Ray tracer interativo na CPU (principal, 1400+ linhas)
   - Sistema completo de ray tracing (interseções, iluminação Phong, texturas)
   - Câmera interativa (position, lookAt, up, FOV)
+  - **3 tipos de projeção** (perspectiva, ortográfica, oblíqua) - teclas 1/2/3/4
   - Picking de objetos com mouse
   - Multi-threading para renderização eficiente
   - Vela interativa (liga/desliga ao clicar)
-- **`src/transform_demo.cpp`** - Demonstração de transformações (translação, rotação, escala, cisalhamento)
-- **`src/projection_demo.cpp`** - Demonstração de projeções (perspectiva, ortográfica, oblíqua Cavalier/Cabinet)
-- **`src/pick_demo.cpp`** - Demonstração de picking
+- **`src/projection_demo.cpp`** - Gera imagens PPM das 3 projeções (perspectiva, ortográfica, oblíqua Cavalier/Cabinet)
 
 ### Bibliotecas (include/):
 - **`Matrix4x4.h`** - Transformações 4x4 (translação, rotação X/Y/Z/arbitrária, escala, cisalhamento, reflexão)

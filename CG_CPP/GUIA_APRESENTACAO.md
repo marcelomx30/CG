@@ -2,7 +2,7 @@
 
 ## 📍 ONDE ALTERAR O CÓDIGO PARA DEMONSTRAÇÕES
 
-Todas as configurações estão no **início** do arquivo `src/interactive_opengl.cpp` nas **LINHAS 21-135**.
+Todas as configurações estão no **início** do arquivo `src/interactive_opengl.cpp` nas **LINHAS 21-177**.
 
 **Cada seção tem:**
 - ⚠️ Marcador visual "ALTERE AQUI"
@@ -211,10 +211,51 @@ const float CHAPEL_DEPTH = 25.0f;
 
 ---
 
+## 7️⃣ TIPOS DE PROJEÇÃO (3 Planos de Fuga)
+
+**Arquivo:** `src/interactive_opengl.cpp`
+**Linhas:** 161-174
+
+```cpp
+enum ProjectionType {
+    PROJECTION_PERSPECTIVE,   // Tecla 1: Perspectiva (padrão)
+    PROJECTION_ORTHOGRAPHIC,  // Tecla 2: Ortográfica
+    PROJECTION_OBLIQUE_CAV,   // Tecla 3: Oblíqua Cavalier (45°, fator 1.0)
+    PROJECTION_OBLIQUE_CAB    // Tecla 4: Oblíqua Cabinet (63.4°, fator 0.5)
+};
+
+ProjectionType currentProjection = PROJECTION_PERSPECTIVE;
+```
+
+### Como demonstrar ao professor:
+
+**Opção 1 - DURANTE EXECUÇÃO (RECOMENDADO):**
+1. Execute: `./interactive_opengl`
+2. Pressione teclas **1, 2, 3, 4** para alternar entre projeções
+   - **1**: Perspectiva (padrão)
+   - **2**: Ortográfica
+   - **3**: Oblíqua Cavalier
+   - **4**: Oblíqua Cabinet
+3. O título da janela mostra a projeção atual
+
+**Opção 2 - NO CÓDIGO:**
+```cpp
+// Mudar projeção inicial (linha 174)
+ProjectionType currentProjection = PROJECTION_ORTHOGRAPHIC;  // Começa em ortográfica
+```
+
+### Diferenças entre projeções:
+- **Perspectiva**: Raios convergem para a posição da câmera (realista)
+- **Ortográfica**: Raios paralelos (sem perspectiva)
+- **Oblíqua Cavalier**: 45°, preserva profundidade (fator 1.0)
+- **Oblíqua Cabinet**: 63.4°, reduz profundidade (fator 0.5)
+
+---
+
 ## 🔄 COMO APLICAR AS ALTERAÇÕES
 
 1. Abra o arquivo: `src/interactive_opengl.cpp`
-2. Vá para as **linhas 21-135** (seção de configurações)
+2. Vá para as **linhas 21-177** (seção de configurações)
 3. Procure o marcador ⚠️ da funcionalidade que quer demonstrar
 4. Altere os valores na linha marcada com **← ALTERE AQUI**
 5. Salve o arquivo
@@ -294,8 +335,9 @@ Depois: `make clean && make && ./interactive_opengl`
 ```bash
 ./interactive_opengl
 ```
-- ✅ Câmera interativa
-- ✅ Transformações do altar (I/K/J/L/U/O/N/M/R)
+- ✅ Câmera interativa (WASD + QE + Setas)
+- ✅ **3 tipos de projeção** (teclas 1/2/3/4)
+- ✅ Transformações do altar (configurável no código)
 - ✅ Picking com mouse
 - ✅ Iluminação configurável
 - ✅ Texturas (4)
@@ -303,12 +345,12 @@ Depois: `make clean && make && ./interactive_opengl`
 - ✅ Emissividade
 - ✅ Vela interativa
 
-### **Demo de Projeções** (NECESSÁRIO PARA PROFESSOR):
+### **Demo de Projeções** (OPCIONAL - gera imagens):
 ```bash
 ./projection_demo
 ```
 - Gera 4 arquivos PPM em `output/`
-- 3 tipos de projeção (planos de fuga):
+- Mesmas 3 projeções da cena principal:
   1. Perspectiva
   2. Ortográfica
   3. Oblíqua (Cavalier + Cabinet)

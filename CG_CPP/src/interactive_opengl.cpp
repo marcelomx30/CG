@@ -158,6 +158,32 @@ const float SHADOW_BIAS = 0.001f;
 // ──────────────────────────────────────────────────────────────────────────
 bool candleLit = true;  // true = acesa, false = apagada
 
+// ──────────────────────────────────────────────────────────────────────────
+// 8️⃣ TIPOS DE PROJEÇÃO (3 Planos de Fuga)
+// ──────────────────────────────────────────────────────────────────────────
+// ⚠️ ALTERE AQUI PARA DEMONSTRAR PROJEÇÕES AO PROFESSOR ⚠️
+// Use teclas 1, 2, 3, 4 durante execução para alternar entre projeções
+
+enum ProjectionType {
+    PROJECTION_PERSPECTIVE,   // Tecla 1: Perspectiva (padrão)
+    PROJECTION_ORTHOGRAPHIC,  // Tecla 2: Ortográfica
+    PROJECTION_OBLIQUE_CAV,   // Tecla 3: Oblíqua Cavalier (45°, fator 1.0)
+    PROJECTION_OBLIQUE_CAB    // Tecla 4: Oblíqua Cabinet (63.4°, fator 0.5)
+};
+
+ProjectionType currentProjection = PROJECTION_PERSPECTIVE;  // ← ALTERE AQUI para projeção inicial
+
+// Função auxiliar para obter nome da projeção
+const char* getProjectionName(ProjectionType proj) {
+    switch(proj) {
+        case PROJECTION_PERSPECTIVE: return "Perspectiva";
+        case PROJECTION_ORTHOGRAPHIC: return "Ortografica";
+        case PROJECTION_OBLIQUE_CAV: return "Obliqua Cavalier";
+        case PROJECTION_OBLIQUE_CAB: return "Obliqua Cabinet";
+        default: return "Desconhecida";
+    }
+}
+
 // ============================================================================
 // FIM DAS CONFIGURAÇÕES
 // ============================================================================
@@ -183,10 +209,50 @@ struct Camera {
         Vector3 right = forward.cross(up).normalized();
         Vector3 newUp = right.cross(forward);
 
-        float tanFov = tan(fov * 0.5f * M_PI / 180.0f);
-        Vector3 rayDir = forward + right * (px * tanFov * aspectRatio) + newUp * (py * tanFov);
+        // Gera raio baseado no tipo de projeção
+        Vector3 rayDir;
+        Vector3 rayOrigin = position;
 
-        return Ray(position, rayDir.normalized());
+        switch(currentProjection) {
+            case PROJECTION_PERSPECTIVE: {
+                // Perspectiva: raios convergem para um ponto (posição da câmera)
+                float tanFov = tan(fov * 0.5f * M_PI / 180.0f);
+                rayDir = forward + right * (px * tanFov * aspectRatio) + newUp * (py * tanFov);
+                break;
+            }
+            case PROJECTION_ORTHOGRAPHIC: {
+                // Ortográfica: raios paralelos
+                // Origem varia no plano, direção constante
+                float scale = 5.0f; // Escala da vista ortográfica
+                rayOrigin = position + right * (px * scale * aspectRatio) + newUp * (py * scale);
+                rayDir = forward;
+                break;
+            }
+            case PROJECTION_OBLIQUE_CAV: {
+                // Oblíqua Cavalier: 45°, fator 1.0
+                float scale = 5.0f;
+                float angle = 45.0f * M_PI / 180.0f; // 45 graus
+                float factor = 1.0f; // Cavalier preserva profundidade
+
+                rayOrigin = position + right * (px * scale * aspectRatio) + newUp * (py * scale);
+                Vector3 oblique = right * (cos(angle) * factor) + newUp * (sin(angle) * factor);
+                rayDir = forward + oblique;
+                break;
+            }
+            case PROJECTION_OBLIQUE_CAB: {
+                // Oblíqua Cabinet: 63.4°, fator 0.5
+                float scale = 5.0f;
+                float angle = 63.4f * M_PI / 180.0f; // 63.4 graus
+                float factor = 0.5f; // Cabinet reduz profundidade
+
+                rayOrigin = position + right * (px * scale * aspectRatio) + newUp * (py * scale);
+                Vector3 oblique = right * (cos(angle) * factor) + newUp * (sin(angle) * factor);
+                rayDir = forward + oblique;
+                break;
+            }
+        }
+
+        return Ray(rayOrigin, rayDir.normalized());
     }
 
     void moveForward(float speed) {
@@ -1236,6 +1302,10 @@ int main() {
     bool needsRender = true;
     SDL_Event event;
 
+    // Atualizar título da janela com projeção inicial
+    string windowTitle = string("Capela Ray Tracing - CPU Rendering - Projecao: ") + getProjectionName(currentProjection);
+    SDL_SetWindowTitle(window, windowTitle.c_str());
+
     while (running) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
@@ -1298,6 +1368,36 @@ int main() {
                     case SDLK_RIGHT: camera.rotate(0.05f, 0); needsRender = true; break;
                     case SDLK_UP: camera.rotate(0, 0.05f); needsRender = true; break;
                     case SDLK_DOWN: camera.rotate(0, -0.05f); needsRender = true; break;
+
+                    // Tipos de projeção (3 planos de fuga)
+                    case SDLK_1:
+                        currentProjection = PROJECTION_PERSPECTIVE;
+                        needsRender = true;
+                        windowTitle = string("Capela Ray Tracing - CPU Rendering - Projecao: ") + getProjectionName(currentProjection);
+                        SDL_SetWindowTitle(window, windowTitle.c_str());
+                        cout << "\n[PROJECAO] Perspectiva ativada" << endl;
+                        break;
+                    case SDLK_2:
+                        currentProjection = PROJECTION_ORTHOGRAPHIC;
+                        needsRender = true;
+                        windowTitle = string("Capela Ray Tracing - CPU Rendering - Projecao: ") + getProjectionName(currentProjection);
+                        SDL_SetWindowTitle(window, windowTitle.c_str());
+                        cout << "\n[PROJECAO] Ortografica ativada" << endl;
+                        break;
+                    case SDLK_3:
+                        currentProjection = PROJECTION_OBLIQUE_CAV;
+                        needsRender = true;
+                        windowTitle = string("Capela Ray Tracing - CPU Rendering - Projecao: ") + getProjectionName(currentProjection);
+                        SDL_SetWindowTitle(window, windowTitle.c_str());
+                        cout << "\n[PROJECAO] Obliqua Cavalier ativada (45°, fator 1.0)" << endl;
+                        break;
+                    case SDLK_4:
+                        currentProjection = PROJECTION_OBLIQUE_CAB;
+                        needsRender = true;
+                        windowTitle = string("Capela Ray Tracing - CPU Rendering - Projecao: ") + getProjectionName(currentProjection);
+                        SDL_SetWindowTitle(window, windowTitle.c_str());
+                        cout << "\n[PROJECAO] Obliqua Cabinet ativada (63.4°, fator 0.5)" << endl;
+                        break;
                 }
             }
         }
