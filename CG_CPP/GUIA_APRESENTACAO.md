@@ -2,7 +2,13 @@
 
 ## 📍 ONDE ALTERAR O CÓDIGO PARA DEMONSTRAÇÕES
 
-Todas as configurações estão no **início** do arquivo `src/interactive_opengl.cpp` nas **LINHAS 21-78**.
+Todas as configurações estão no **início** do arquivo `src/interactive_opengl.cpp` nas **LINHAS 21-135**.
+
+**Cada seção tem:**
+- ⚠️ Marcador visual "ALTERE AQUI"
+- Exemplos de valores para testar
+- Comentários explicativos
+- Setas "← ALTERE AQUI" nas linhas específicas
 
 ---
 
@@ -208,11 +214,14 @@ const float CHAPEL_DEPTH = 25.0f;
 ## 🔄 COMO APLICAR AS ALTERAÇÕES
 
 1. Abra o arquivo: `src/interactive_opengl.cpp`
-2. Vá para as **linhas 21-106** (seção de configurações)
-3. Altere os valores desejados
-4. Salve o arquivo
-5. Recompile: `make clean && make`
-6. Execute: `./interactive_opengl`
+2. Vá para as **linhas 21-135** (seção de configurações)
+3. Procure o marcador ⚠️ da funcionalidade que quer demonstrar
+4. Altere os valores na linha marcada com **← ALTERE AQUI**
+5. Salve o arquivo
+6. Recompile: `make clean && make`
+7. Execute: `./interactive_opengl`
+
+**Dica:** Cada seção tem exemplos comentados que você pode descomentar/usar!
 
 ---
 

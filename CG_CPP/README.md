@@ -27,22 +27,17 @@ make run
 ```
 
 **Controles:**
-
-*Câmera:*
-- **W/A/S/D** - Mover câmera (frente/esquerda/trás/direita)
+- **W/A/S/D** - Mover câmera
 - **Q/E** - Subir/Descer
-- **Setas** - Rotacionar câmera (yaw e pitch)
+- **Setas** - Rotacionar câmera
 - **Mouse (clique)** - Picking de objetos (mostra nome e distância)
   - Clique na vela para **ligar/desligar** a luz
-
-*Transformações do Altar:*
-- **I/K/J/L** - Transladar altar (frente/trás/esquerda/direita)
-- **U/O** - Transladar altar (subir/descer)
-- **N/M** - Rotacionar altar (anti-horário/horário)
-- **R** - Resetar transformações
-
-*Outros:*
 - **ESC** - Sair
+
+**Para alterar transformações, câmera, luzes, sombras, etc:**
+- Edite: `src/interactive_opengl.cpp` (linhas 21-135)
+- Recompile: `make clean && make`
+- Todos os parâmetros têm comentários explicativos e exemplos
 
 **Cena:** Capela 3D realista (12m × 20m × 8m) com:
 - Altar com ostensório e hóstia (raios dourados)
