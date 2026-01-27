@@ -15,14 +15,95 @@
 #include "../include/Color.h"
 #include "../include/Ray.h"
 #include "../include/Texture.h"
+#include "../include/Matrix4x4.h"
 
 using namespace std;
 
 const int WIDTH = 800;
 const int HEIGHT = 600;
 
-// Estado da vela
-bool candleLit = true;
+// ============================================================================
+// ⚙️ CONFIGURAÇÕES PARA DEMONSTRAÇÃO AO PROFESSOR
+// ============================================================================
+// ALTERE ESTES VALORES PARA DEMONSTRAR AS FUNCIONALIDADES!
+// Após alterar, recompile com: make clean && make && ./interactive_opengl
+// ============================================================================
+
+// ──────────────────────────────────────────────────────────────────────────
+// 1️⃣ CÂMERA (Position, LookAt, Up)
+// ──────────────────────────────────────────────────────────────────────────
+// Posição da câmera (onde está)
+const Vector3 CAMERA_POSITION(6, 1.8, 2);
+
+// Para onde a câmera olha
+const Vector3 CAMERA_LOOKAT(6, 1.5, 10);
+
+// Vetor "up" da câmera (orientação)
+const Vector3 CAMERA_UP(0, 1, 0);
+
+// Campo de visão (FOV) em graus
+const float CAMERA_FOV = 60.0f;
+
+// ──────────────────────────────────────────────────────────────────────────
+// 2️⃣ TRANSFORMAÇÕES DE OBJETOS (Translação + Rotação)
+// ──────────────────────────────────────────────────────────────────────────
+// Translação do altar (X, Y, Z)
+// Exemplo: (2, 0, 0) move 2 unidades para direita
+//          (0, 1, 0) move 1 unidade para cima
+//          (0, 0, 3) move 3 unidades para frente
+Vector3 altarTranslation(0, 0, 0);
+
+// Rotação do altar em torno do eixo Y (em radianos)
+// Exemplo: 0.5 = ~29°, 1.57 = ~90°, 3.14 = ~180°
+float altarRotationY = 0.0f;
+
+// ──────────────────────────────────────────────────────────────────────────
+// 3️⃣ ILUMINAÇÃO (Posição e Intensidade das Luzes)
+// ──────────────────────────────────────────────────────────────────────────
+// Luz 1: Hóstia (luz divina/sagrada)
+const Vector3 LIGHT_HOSTIA_POS(6, 1.4, 18);
+const Color LIGHT_HOSTIA_COLOR(0.7f, 0.7f, 0.8f);  // RGB: branco-azulado
+
+// Luz 2: Vela (luz quente quando acesa)
+const Vector3 LIGHT_CANDLE_POS(8, 1.1f, 17.5f);
+const Color LIGHT_CANDLE_COLOR(0.5f, 0.15f, 0.075f);  // RGB: vermelho-laranja
+
+// Luz ambiente (iluminação geral da cena)
+const Color AMBIENT_LIGHT(0.15f, 0.15f, 0.18f);  // RGB: azul escuro
+
+// ──────────────────────────────────────────────────────────────────────────
+// 4️⃣ OBJETOS EMISSIVOS (Brilho próprio)
+// ──────────────────────────────────────────────────────────────────────────
+const float EMISSIVE_HOSTIA = 2.0f;      // Hóstia brilha 200%
+const float EMISSIVE_VITRAL = 0.9f;      // Vitral brilha 90%
+const float EMISSIVE_CANDLE = 1.3f;      // Chama da vela brilha 130%
+const float EMISSIVE_WALLS = 0.36f;      // Paredes brilham 36%
+const float EMISSIVE_CEILING = 0.36f;    // Teto brilha 36%
+const float EMISSIVE_FLOOR = 0.08f;      // Chão brilha 8%
+
+// ──────────────────────────────────────────────────────────────────────────
+// 5️⃣ DIMENSÕES DA CAPELA (Sistema de Coordenadas)
+// ──────────────────────────────────────────────────────────────────────────
+// Origem: (0, 0, 0) no canto frontal esquerdo do chão
+const float CHAPEL_WIDTH = 12.0f;   // Largura (eixo X)
+const float CHAPEL_HEIGHT = 8.0f;   // Altura (eixo Y)
+const float CHAPEL_DEPTH = 20.0f;   // Profundidade (eixo Z)
+
+// ──────────────────────────────────────────────────────────────────────────
+// 6️⃣ SOMBRAS (Shadow Rays)
+// ──────────────────────────────────────────────────────────────────────────
+const bool ENABLE_SHADOWS = true;         // true = sombras ativadas, false = desativadas
+const float SHADOW_INTENSITY = 0.3f;      // Intensidade da sombra (0.0 = totalmente escuro, 1.0 = sem sombra)
+const float SHADOW_BIAS = 0.001f;         // Pequeno offset para evitar "shadow acne"
+
+// ──────────────────────────────────────────────────────────────────────────
+// 7️⃣ VELA (Estado inicial)
+// ──────────────────────────────────────────────────────────────────────────
+bool candleLit = true;  // true = acesa, false = apagada
+
+// ============================================================================
+// FIM DAS CONFIGURAÇÕES
+// ============================================================================
 
 // Texturas globais
 Texture woodTexture;
@@ -37,7 +118,7 @@ struct Camera {
     Vector3 up;
     float fov;
 
-    Camera() : position(6, 1.8, 2), lookAt(6, 1.5, 10), up(0, 1, 0), fov(60.0f) {}
+    Camera() : position(CAMERA_POSITION), lookAt(CAMERA_LOOKAT), up(CAMERA_UP), fov(CAMERA_FOV) {}
 
     Ray generateRay(float px, float py, float aspectRatio) const {
         // px, py em [-1, 1]
@@ -299,7 +380,83 @@ bool intersectBox(const Ray& ray, const Vector3& min, const Vector3& max, HitRec
     return true;
 }
 
-// Modelo de iluminação Phong (com suporte a texturas)
+// Verifica se um ponto está na sombra em relação a uma luz
+bool isInShadow(const Vector3& point, const Vector3& lightPos, const Vector3& normal) {
+    if (!ENABLE_SHADOWS) return false;
+
+    Vector3 toLight = lightPos - point;
+    float distanceToLight = toLight.length();
+    Vector3 lightDir = toLight.normalized();
+
+    // Cria raio de sombra com pequeno offset para evitar "shadow acne"
+    Ray shadowRay(point + normal * SHADOW_BIAS, lightDir);
+
+    // Testa interseção com objetos principais (altar, bancos, ostensório, vela)
+    HitRecord shadowHit;
+
+    // Altar
+    Vector3 baseMin(4.5, 0, 17.5);
+    Vector3 baseMax(7.5, 0.8, 18.5);
+    Vector3 altarCenter((baseMin.x + baseMax.x) * 0.5f,
+                       (baseMin.y + baseMax.y) * 0.5f,
+                       (baseMin.z + baseMax.z) * 0.5f);
+    Matrix4x4 transform = Matrix4x4::translation(altarTranslation) *
+                         Matrix4x4::translation(altarCenter) *
+                         Matrix4x4::rotationY(altarRotationY) *
+                         Matrix4x4::translation(altarCenter * -1.0f);
+    Vector3 altarMin = transform.transformPoint(baseMin);
+    Vector3 altarMax = transform.transformPoint(baseMax);
+    Vector3 realMin(min(altarMin.x, altarMax.x), min(altarMin.y, altarMax.y), min(altarMin.z, altarMax.z));
+    Vector3 realMax(max(altarMin.x, altarMax.x), max(altarMin.y, altarMax.y), max(altarMin.z, altarMax.z));
+
+    if (intersectBox(shadowRay, realMin, realMax, shadowHit)) {
+        if (shadowHit.t > 0.0f && shadowHit.t < distanceToLight) {
+            return true;
+        }
+    }
+
+    // Bancos
+    for (int i = 0; i < 4; i++) {
+        float z = 5 + i * 3.0f;
+        // Banco esquerdo
+        if (intersectBox(shadowRay, Vector3(1.3, 0, z - 0.25), Vector3(3.7, 0.45, z + 0.25), shadowHit)) {
+            if (shadowHit.t > 0.0f && shadowHit.t < distanceToLight) {
+                return true;
+            }
+        }
+        // Banco direito
+        if (intersectBox(shadowRay, Vector3(8.3, 0, z - 0.25), Vector3(10.7, 0.45, z + 0.25), shadowHit)) {
+            if (shadowHit.t > 0.0f && shadowHit.t < distanceToLight) {
+                return true;
+            }
+        }
+    }
+
+    // Ostensório base
+    if (intersectCylinder(shadowRay, Vector3(6, 0.8, 18), 0.15f, 0.3f, shadowHit)) {
+        if (shadowHit.t > 0.0f && shadowHit.t < distanceToLight) {
+            return true;
+        }
+    }
+
+    // Ostensório hóstia
+    if (intersectSphere(shadowRay, Vector3(6, 1.4, 18), 0.14f, shadowHit)) {
+        if (shadowHit.t > 0.0f && shadowHit.t < distanceToLight) {
+            return true;
+        }
+    }
+
+    // Vela
+    if (intersectCylinder(shadowRay, Vector3(8, 0, 17.5), 0.12f, 1.0f, shadowHit)) {
+        if (shadowHit.t > 0.0f && shadowHit.t < distanceToLight) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+// Modelo de iluminação Phong (com suporte a texturas e sombras)
 Color phongShading(
     const Vector3& point,
     const Vector3& normal,
@@ -326,14 +483,18 @@ Color phongShading(
 
         Vector3 lightDir = (light.position - point).normalized();
 
+        // Verifica se o ponto está na sombra em relação a esta luz
+        bool inShadow = isInShadow(point, light.position, normal);
+        float shadowFactor = inShadow ? SHADOW_INTENSITY : 1.0f;
+
         // Componente difusa
         float diff = fmax(0.0f, (float)normal.dot(lightDir));
-        Color diffuse = baseColor * light.intensity * diff;
+        Color diffuse = baseColor * light.intensity * diff * shadowFactor;
 
         // Componente especular
         Vector3 reflectDir = normal * (2.0f * normal.dot(lightDir)) - lightDir;
         float spec = pow(fmax(0.0f, (float)viewDir.dot(reflectDir)), shininess);
-        Color specular = light.intensity * spec * 0.5f;
+        Color specular = light.intensity * spec * 0.5f * shadowFactor;
 
         result = result + diffuse + specular;
     }
@@ -349,7 +510,7 @@ HitRecord performPicking(const Ray& ray) {
     HitRecord floorRec;
     if (intersectPlane(ray, Vector3(0, 0, 0), Vector3(0, 1, 0), floorRec, 0.5f)) {
         Vector3 p = floorRec.point;
-        if (p.x >= 0.0f && p.x <= 12.0f && p.z >= 0.0f && p.z <= 20.0f) {
+        if (p.x >= 0.0f && p.x <= CHAPEL_WIDTH && p.z >= 0.0f && p.z <= CHAPEL_DEPTH) {
             rec = floorRec;
             rec.color = Color(0.6f, 0.5f, 0.4f);
             rec.shininess = 5.0f;
@@ -362,7 +523,7 @@ HitRecord performPicking(const Ray& ray) {
     // Parede do fundo
     if (intersectPlane(ray, Vector3(0, 0, 20), Vector3(0, 0, 1), wallRec, 0.25f)) {
         Vector3 p = wallRec.point;
-        if (p.x >= 0.0f && p.x <= 12.0f && p.y >= 0.0f && p.y <= 8.0f) {
+        if (p.x >= 0.0f && p.x <= CHAPEL_WIDTH && p.y >= 0.0f && p.y <= CHAPEL_HEIGHT) {
             if (wallRec.t < rec.t) {
                 rec = wallRec;
                 rec.objectName = "Parede do Fundo";
@@ -372,7 +533,7 @@ HitRecord performPicking(const Ray& ray) {
     // Parede esquerda
     if (intersectPlane(ray, Vector3(0, 0, 0), Vector3(1, 0, 0), wallRec, 0.25f)) {
         Vector3 p = wallRec.point;
-        if (p.z >= 0.0f && p.z <= 20.0f && p.y >= 0.0f && p.y <= 8.0f) {
+        if (p.z >= 0.0f && p.z <= CHAPEL_DEPTH && p.y >= 0.0f && p.y <= CHAPEL_HEIGHT) {
             if (wallRec.t < rec.t) {
                 rec = wallRec;
                 rec.objectName = "Parede Esquerda";
@@ -382,7 +543,7 @@ HitRecord performPicking(const Ray& ray) {
     // Parede direita
     if (intersectPlane(ray, Vector3(12, 0, 0), Vector3(1, 0, 0), wallRec, 0.25f)) {
         Vector3 p = wallRec.point;
-        if (p.z >= 0.0f && p.z <= 20.0f && p.y >= 0.0f && p.y <= 8.0f) {
+        if (p.z >= 0.0f && p.z <= CHAPEL_DEPTH && p.y >= 0.0f && p.y <= CHAPEL_HEIGHT) {
             if (wallRec.t < rec.t) {
                 rec = wallRec;
                 rec.objectName = "Parede Direita";
@@ -417,7 +578,7 @@ HitRecord performPicking(const Ray& ray) {
     // Teto (finito)
     if (intersectPlane(ray, Vector3(0, 8, 0), Vector3(0, 1, 0), wallRec, 0.5f)) {
         Vector3 p = wallRec.point;
-        if (p.x >= 0.0f && p.x <= 12.0f && p.z >= 0.0f && p.z <= 20.0f) {
+        if (p.x >= 0.0f && p.x <= CHAPEL_WIDTH && p.z >= 0.0f && p.z <= CHAPEL_DEPTH) {
             if (wallRec.t < rec.t) {
                 rec = wallRec;
                 rec.objectName = "Teto";
@@ -565,7 +726,7 @@ void renderTile(
             if (intersectPlane(ray, Vector3(0, 0, 0), Vector3(0, 1, 0), floorRec, 0.5f)) {
                 Vector3 p = floorRec.point;
                 // Limita o chão às dimensões da capela
-                if (p.x >= 0.0f && p.x <= 12.0f && p.z >= 0.0f && p.z <= 20.0f) {
+                if (p.x >= 0.0f && p.x <= CHAPEL_WIDTH && p.z >= 0.0f && p.z <= CHAPEL_DEPTH) {
                     rec = floorRec;
                     rec.color = Color(0.6f, 0.5f, 0.4f);
                     rec.shininess = 5.0f;
@@ -578,7 +739,7 @@ void renderTile(
             if (intersectPlane(ray, Vector3(0, 0, 20), Vector3(0, 0, 1), wallRec, 0.25f)) {
                 Vector3 p = wallRec.point;
                 // Limita a parede: X=[0,12], Y=[0,8]
-                if (p.x >= 0.0f && p.x <= 12.0f && p.y >= 0.0f && p.y <= 8.0f) {
+                if (p.x >= 0.0f && p.x <= CHAPEL_WIDTH && p.y >= 0.0f && p.y <= CHAPEL_HEIGHT) {
                     if (wallRec.t < rec.t) {
                         rec = wallRec;
                         rec.color = Color(0.7f, 0.68f, 0.65f);
@@ -594,7 +755,7 @@ void renderTile(
             if (intersectPlane(ray, Vector3(0, 0, 0), Vector3(1, 0, 0), wallRec, 0.25f)) {
                 Vector3 p = wallRec.point;
                 // Limita a parede: Z=[0,20], Y=[0,8]
-                if (p.z >= 0.0f && p.z <= 20.0f && p.y >= 0.0f && p.y <= 8.0f) {
+                if (p.z >= 0.0f && p.z <= CHAPEL_DEPTH && p.y >= 0.0f && p.y <= CHAPEL_HEIGHT) {
                     if (wallRec.t < rec.t) {
                         rec = wallRec;
                         rec.color = Color(0.7f, 0.68f, 0.65f);
@@ -610,7 +771,7 @@ void renderTile(
             if (intersectPlane(ray, Vector3(12, 0, 0), Vector3(1, 0, 0), wallRec, 0.25f)) {
                 Vector3 p = wallRec.point;
                 // Limita a parede: Z=[0,20], Y=[0,8]
-                if (p.z >= 0.0f && p.z <= 20.0f && p.y >= 0.0f && p.y <= 8.0f) {
+                if (p.z >= 0.0f && p.z <= CHAPEL_DEPTH && p.y >= 0.0f && p.y <= CHAPEL_HEIGHT) {
                     if (wallRec.t < rec.t) {
                         rec = wallRec;
                         rec.color = Color(0.7f, 0.68f, 0.65f);
@@ -627,7 +788,7 @@ void renderTile(
                 Vector3 p = wallRec.point;
                 // Parede frontal: X=[0,12], Y=[0,8]
                 // Porta: X=[4,8], Y=[0,3] (entrada central)
-                bool isWall = (p.x >= 0.0f && p.x <= 12.0f && p.y >= 0.0f && p.y <= 8.0f);
+                bool isWall = (p.x >= 0.0f && p.x <= CHAPEL_WIDTH && p.y >= 0.0f && p.y <= CHAPEL_HEIGHT);
                 bool isDoor = (p.x >= 4.0f && p.x <= 8.0f && p.y >= 0.0f && p.y <= 3.0f);
 
                 if (isWall && !isDoor) {
@@ -666,7 +827,7 @@ void renderTile(
             if (intersectPlane(ray, Vector3(0, 8, 0), Vector3(0, 1, 0), wallRec, 1.0f)) {
                 Vector3 p = wallRec.point;
                 // Limita o teto às dimensões da capela
-                if (p.x >= 0.0f && p.x <= 12.0f && p.z >= 0.0f && p.z <= 20.0f) {
+                if (p.x >= 0.0f && p.x <= CHAPEL_WIDTH && p.z >= 0.0f && p.z <= CHAPEL_DEPTH) {
                     if (wallRec.t < rec.t) {
                         rec = wallRec;
                         rec.color = Color(0.65f, 0.63f, 0.60f);
@@ -675,9 +836,8 @@ void renderTile(
                         rec.texture = &ceilingTexture;
                         rec.objectName = "Teto";
                         // Mapeia UMA ÚNICA imagem para todo o teto (0-1 em ambos os eixos)
-                        // Teto: X[0,12], Z[0,20]
-                        rec.u = p.x / 12.0f;  // 0 a 1 ao longo da largura
-                        rec.v = p.z / 20.0f;  // 0 a 1 ao longo do comprimento
+                        rec.u = p.x / CHAPEL_WIDTH;   // 0 a 1 ao longo da largura
+                        rec.v = p.z / CHAPEL_DEPTH;   // 0 a 1 ao longo do comprimento
                     }
                 }
             }
@@ -695,15 +855,38 @@ void renderTile(
                 }
             }
 
-            // Altar (caixa com textura de madeira)
-            if (intersectBox(ray, Vector3(4.5, 0, 17.5), Vector3(7.5, 0.8, 18.5), boxRec)) {
-                if (boxRec.t < rec.t) {
-                    rec = boxRec;
-                    rec.color = Color(0.6f, 0.4f, 0.2f);
-                    rec.shininess = 10.0f;
-                    rec.useTexture = true;
-                    rec.texture = &woodTexture;
-                    rec.objectName = "Altar";
+            // Altar (caixa com textura de madeira) - COM TRANSFORMAÇÕES
+            {
+                // Posição original do altar
+                Vector3 baseMin(4.5, 0, 17.5);
+                Vector3 baseMax(7.5, 0.8, 18.5);
+                Vector3 altarCenter((baseMin.x + baseMax.x) * 0.5f,
+                                   (baseMin.y + baseMax.y) * 0.5f,
+                                   (baseMin.z + baseMax.z) * 0.5f);
+
+                // Aplica transformações: translação + rotação em torno do centro
+                Matrix4x4 transform = Matrix4x4::translation(altarTranslation) *
+                                     Matrix4x4::translation(altarCenter) *
+                                     Matrix4x4::rotationY(altarRotationY) *
+                                     Matrix4x4::translation(altarCenter * -1.0f);
+
+                // Transforma os vértices do altar
+                Vector3 altarMin = transform.transformPoint(baseMin);
+                Vector3 altarMax = transform.transformPoint(baseMax);
+
+                // Corrige ordem min/max após rotação
+                Vector3 realMin(min(altarMin.x, altarMax.x), min(altarMin.y, altarMax.y), min(altarMin.z, altarMax.z));
+                Vector3 realMax(max(altarMin.x, altarMax.x), max(altarMin.y, altarMax.y), max(altarMin.z, altarMax.z));
+
+                if (intersectBox(ray, realMin, realMax, boxRec)) {
+                    if (boxRec.t < rec.t) {
+                        rec = boxRec;
+                        rec.color = Color(0.6f, 0.4f, 0.2f);
+                        rec.shininess = 10.0f;
+                        rec.useTexture = true;
+                        rec.texture = &woodTexture;
+                        rec.objectName = "Altar";
+                    }
                 }
             }
 
@@ -840,38 +1023,37 @@ void renderTile(
             if (rec.hit) {
                 // Objetos emissivos (brilham por conta própria)
                 if (rec.objectName == "Janela de Vitral") {
-                    // Vitral é emissivo com textura (50% menos brilho)
+                    // Vitral é emissivo com textura
                     if (rec.useTexture && rec.texture && rec.texture->isLoaded()) {
                         Color texColor = rec.texture->sample(rec.u, rec.v);
-                        pixelColor = texColor * 0.9f; // Brilho reduzido
+                        pixelColor = texColor * EMISSIVE_VITRAL;
                     } else {
-                        pixelColor = rec.color * 0.75f;
+                        pixelColor = rec.color * EMISSIVE_VITRAL;
                     }
                 } else if (rec.objectName == "Ostensorio - Hostia") {
                     // Hóstia brilha intensamente (fonte de luz divina)
-                    pixelColor = rec.color * 2.0f; // Brilho forte da hóstia
+                    pixelColor = rec.color * EMISSIVE_HOSTIA;
                 } else if (rec.objectName == "Chama da Vela") {
                     // Chama da vela brilha
-                    pixelColor = rec.color * 1.3f;
+                    pixelColor = rec.color * EMISSIVE_CANDLE;
                 } else if (rec.objectName == "Parede do Fundo" ||
                            rec.objectName == "Parede Esquerda" ||
                            rec.objectName == "Parede Direita" ||
                            rec.objectName == "Parede da Frente (Entrada)") {
-                    // TODAS as paredes com brilho uniforme (36% - 60% menos que 90%)
+                    // Paredes com emissão configurável
                     Vector3 viewDir = (ray.origin - rec.point).normalized();
                     Color litColor = phongShading(rec.point, rec.normal, viewDir,
                                                  rec.color, rec.shininess, lights, ambient,
                                                  rec.useTexture, rec.u, rec.v, rec.texture);
 
-                    // Todas as paredes com 36% de emissão (uniformemente iluminadas)
                     if (rec.useTexture && rec.texture && rec.texture->isLoaded()) {
                         Color texColor = rec.texture->sample(rec.u, rec.v);
-                        pixelColor = litColor + texColor * 0.36f;
+                        pixelColor = litColor + texColor * EMISSIVE_WALLS;
                     } else {
-                        pixelColor = litColor + rec.color * 0.36f;
+                        pixelColor = litColor + rec.color * EMISSIVE_WALLS;
                     }
                 } else if (rec.objectName == "Teto") {
-                    // Teto com brilho igual às paredes (36%)
+                    // Teto com emissão configurável
                     Vector3 viewDir = (ray.origin - rec.point).normalized();
                     Color litColor = phongShading(rec.point, rec.normal, viewDir,
                                                  rec.color, rec.shininess, lights, ambient,
@@ -879,12 +1061,12 @@ void renderTile(
 
                     if (rec.useTexture && rec.texture && rec.texture->isLoaded()) {
                         Color texColor = rec.texture->sample(rec.u, rec.v);
-                        pixelColor = litColor + texColor * 0.36f;
+                        pixelColor = litColor + texColor * EMISSIVE_CEILING;
                     } else {
-                        pixelColor = litColor + rec.color * 0.36f;
+                        pixelColor = litColor + rec.color * EMISSIVE_CEILING;
                     }
                 } else if (rec.objectName == "Chao") {
-                    // Chão com brilho mais suave (8%)
+                    // Chão com emissão configurável
                     Vector3 viewDir = (ray.origin - rec.point).normalized();
                     Color litColor = phongShading(rec.point, rec.normal, viewDir,
                                                  rec.color, rec.shininess, lights, ambient,
@@ -892,9 +1074,9 @@ void renderTile(
 
                     if (rec.useTexture && rec.texture && rec.texture->isLoaded()) {
                         Color texColor = rec.texture->sample(rec.u, rec.v);
-                        pixelColor = litColor + texColor * 0.08f;
+                        pixelColor = litColor + texColor * EMISSIVE_FLOOR;
                     } else {
-                        pixelColor = litColor + rec.color * 0.08f;
+                        pixelColor = litColor + rec.color * EMISSIVE_FLOOR;
                     }
                 } else {
                     // Objetos normais - usa iluminação Phong
@@ -917,7 +1099,12 @@ int main() {
     cout << "  Q/E - Subir/Descer" << endl;
     cout << "  Setas - Rotacionar" << endl;
     cout << "  Mouse - Picking (clique na vela para ligar/desligar)" << endl;
-    cout << "  ESC - Sair\n" << endl;
+    cout << "\n  TRANSFORMACOES DO ALTAR:" << endl;
+    cout << "  I/K/J/L - Transladar altar (frente/tras/esquerda/direita)" << endl;
+    cout << "  U/O     - Transladar altar (subir/descer)" << endl;
+    cout << "  N/M     - Rotacionar altar (anti-horario/horario)" << endl;
+    cout << "  R       - Resetar transformacoes do altar" << endl;
+    cout << "\n  ESC - Sair\n" << endl;
 
     // Carregar texturas
     cout << "Carregando texturas..." << endl;
@@ -984,11 +1171,11 @@ int main() {
 
     // Luzes (intensidades reduzidas)
     vector<Light> lights;
-    // Luz da hóstia no ostensório (luz divina/sagrada, suave)
-    lights.push_back(Light(Vector3(6, 1.4, 18), Color(0.7f, 0.7f, 0.8f))); // Luz branca/azulada suave
-    // Luz da vela (quente, quando acesa) - 50% menos brilho
-    lights.push_back(Light(Vector3(8, 1.1f, 17.5f), Color(0.5f, 0.15f, 0.075f), candleLit)); // Vela 50% mais fraca
-    Color ambient(0.15f, 0.15f, 0.18f); // Ambiente mais escuro
+    // Luz da hóstia no ostensório (luz divina/sagrada)
+    lights.push_back(Light(LIGHT_HOSTIA_POS, LIGHT_HOSTIA_COLOR));
+    // Luz da vela (quente, quando acesa)
+    lights.push_back(Light(LIGHT_CANDLE_POS, LIGHT_CANDLE_COLOR, candleLit));
+    Color ambient = AMBIENT_LIGHT;
 
     bool running = true;
     bool needsRender = true;
@@ -1042,16 +1229,51 @@ int main() {
             else if (event.type == SDL_KEYDOWN) {
                 switch (event.key.keysym.sym) {
                     case SDLK_ESCAPE: running = false; break;
+
+                    // Movimento da câmera
                     case SDLK_w: camera.moveForward(0.2f); needsRender = true; break;
                     case SDLK_s: camera.moveForward(-0.2f); needsRender = true; break;
                     case SDLK_a: camera.moveRight(-0.2f); needsRender = true; break;
                     case SDLK_d: camera.moveRight(0.2f); needsRender = true; break;
                     case SDLK_e: camera.moveUp(0.2f); needsRender = true; break;
                     case SDLK_q: camera.moveUp(-0.2f); needsRender = true; break;
+
+                    // Rotação da câmera
                     case SDLK_LEFT: camera.rotate(-0.05f, 0); needsRender = true; break;
                     case SDLK_RIGHT: camera.rotate(0.05f, 0); needsRender = true; break;
                     case SDLK_UP: camera.rotate(0, 0.05f); needsRender = true; break;
                     case SDLK_DOWN: camera.rotate(0, -0.05f); needsRender = true; break;
+
+                    // TRANSFORMAÇÕES DO ALTAR (para demonstração ao professor)
+                    // Teclas I/K/J/L: translação horizontal
+                    case SDLK_i: altarTranslation.z += 0.5f; needsRender = true;
+                        cout << "Altar transladado: Z+ (para frente)" << endl; break;
+                    case SDLK_k: altarTranslation.z -= 0.5f; needsRender = true;
+                        cout << "Altar transladado: Z- (para tras)" << endl; break;
+                    case SDLK_j: altarTranslation.x -= 0.5f; needsRender = true;
+                        cout << "Altar transladado: X- (esquerda)" << endl; break;
+                    case SDLK_l: altarTranslation.x += 0.5f; needsRender = true;
+                        cout << "Altar transladado: X+ (direita)" << endl; break;
+
+                    // Teclas U/O: translação vertical
+                    case SDLK_u: altarTranslation.y += 0.5f; needsRender = true;
+                        cout << "Altar transladado: Y+ (subir)" << endl; break;
+                    case SDLK_o: altarTranslation.y -= 0.5f; needsRender = true;
+                        cout << "Altar transladado: Y- (descer)" << endl; break;
+
+                    // Teclas N/M: rotação
+                    case SDLK_n: altarRotationY += 0.1f; needsRender = true;
+                        cout << "Altar rotacionado: +10 graus (anti-horario)" << endl; break;
+                    case SDLK_m: altarRotationY -= 0.1f; needsRender = true;
+                        cout << "Altar rotacionado: -10 graus (horario)" << endl; break;
+
+                    // Reset transformações
+                    case SDLK_r:
+                        altarTranslation = Vector3(0, 0, 0);
+                        altarRotationY = 0.0f;
+                        needsRender = true;
+                        cout << "Altar resetado para posição original" << endl;
+                        break;
                 }
             }
         }

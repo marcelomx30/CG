@@ -14,9 +14,7 @@ BIN_DIR = .
 SOURCES = $(filter-out $(SRC_DIR)/pick_demo.cpp $(SRC_DIR)/projection_demo.cpp $(SRC_DIR)/transform_demo.cpp $(SRC_DIR)/interactive_opengl.cpp, $(wildcard $(SRC_DIR)/*.cpp))
 OBJECTS = $(SOURCES:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 INTERACTIVE_GL = $(BIN_DIR)/interactive_opengl
-PICKDEMO = $(BIN_DIR)/pick_demo
 PROJDEMO = $(BIN_DIR)/projection_demo
-TRANSFORMDEMO = $(BIN_DIR)/transform_demo
 
 # SDL2 flags (para OpenGL context)
 SDL2_CFLAGS = $(shell pkg-config --cflags sdl2)
@@ -26,7 +24,7 @@ SDL2_LIBS = $(shell pkg-config --libs sdl2)
 OPENGL_LIBS = -lGL -lGLU
 
 # Regra principal
-all: $(INTERACTIVE_GL) $(PICKDEMO) $(PROJDEMO) $(TRANSFORMDEMO)
+all: $(INTERACTIVE_GL) $(PROJDEMO)
 
 # Criar executável interativo OpenGL
 $(INTERACTIVE_GL): $(OBJ_DIR)/interactive_opengl.o $(OBJ_DIR)/Texture.o | $(BIN_DIR)
@@ -37,20 +35,10 @@ $(INTERACTIVE_GL): $(OBJ_DIR)/interactive_opengl.o $(OBJ_DIR)/Texture.o | $(BIN_
 $(OBJ_DIR)/interactive_opengl.o: $(SRC_DIR)/interactive_opengl.cpp | $(OBJ_DIR)
 	$(CXX) $(CXXFLAGS) $(SDL2_CFLAGS) -c $< -o $@
 
-# Criar executável de demonstração de picking
-$(PICKDEMO): $(OBJECTS) $(OBJ_DIR)/pick_demo.o | $(BIN_DIR)
-	$(CXX) $(CXXFLAGS) $(OBJECTS) $(OBJ_DIR)/pick_demo.o -o $@ $(LDFLAGS)
-	@echo "Build completo! Executável de picking: $(PICKDEMO)"
-
-# Criar executável de demonstração de projeções
+# Criar executável de demonstração de projeções (3 planos de fuga)
 $(PROJDEMO): $(OBJECTS) $(OBJ_DIR)/projection_demo.o | $(BIN_DIR)
 	$(CXX) $(CXXFLAGS) $(OBJECTS) $(OBJ_DIR)/projection_demo.o -o $@ $(LDFLAGS)
 	@echo "Build completo! Executável de projeções: $(PROJDEMO)"
-
-# Criar executável de demonstração de transformações
-$(TRANSFORMDEMO): $(OBJ_DIR)/transform_demo.o | $(BIN_DIR)
-	$(CXX) $(CXXFLAGS) $(OBJ_DIR)/transform_demo.o -o $@ $(LDFLAGS)
-	@echo "Build completo! Executável de transformações: $(TRANSFORMDEMO)"
 
 # Compilar objetos
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(OBJ_DIR)
@@ -65,59 +53,43 @@ $(BIN_DIR):
 
 # Limpar arquivos gerados
 clean:
-	rm -rf $(OBJ_DIR) $(INTERACTIVE_GL) $(PICKDEMO) $(PROJDEMO) $(TRANSFORMDEMO)
+	rm -rf $(OBJ_DIR) $(INTERACTIVE_GL) $(PROJDEMO)
 	@echo "Arquivos limpos!"
 
-# Executar interface OpenGL interativa (PRINCIPAL)
+# Executar cena principal interativa (PRINCIPAL)
 run: $(INTERACTIVE_GL)
-	@echo "Iniciando OpenGL com SOFTWARE RENDERING (sem GPU)..."
-	LIBGL_ALWAYS_SOFTWARE=1 MESA_GL_VERSION_OVERRIDE=2.1 ./$(INTERACTIVE_GL)
+	./$(INTERACTIVE_GL)
 
-# Alias para run
-run-opengl: run
-
-# Executar demonstração de picking
-run-pick: $(PICKDEMO)
-	./$(PICKDEMO)
-
-# Executar demonstração de projeções
+# Executar demonstração de projeções (3 planos de fuga - NECESSÁRIO PARA O PROFESSOR)
 run-projections: $(PROJDEMO)
 	./$(PROJDEMO)
 
-# Executar demonstração de transformações
-run-transforms: $(TRANSFORMDEMO)
-	./$(TRANSFORMDEMO)
-
 # Mostrar ajuda
 help:
-	@echo "Makefile para Ray Casting"
+	@echo "Makefile para Ray Tracing - Capela 3D"
 	@echo ""
 	@echo "Comandos disponíveis:"
 	@echo "  make                       - Compila todos os programas"
 	@echo "  make clean                 - Remove arquivos compilados"
-	@echo "  make run                   - 🎮 INTERFACE OPENGL (WASD + Mouse Picking - SOFTWARE RENDERING SEM GPU)"
-	@echo "  make run-opengl            - Alias para 'make run'"
-	@echo "  make run-pick              - Demonstração de picking"
-	@echo "  make run-projections       - Demonstração de projeções"
-	@echo "  make run-transforms        - Demonstração de transformações"
+	@echo "  make run                   - 🎮 CENA PRINCIPAL (Ray Tracing interativo)"
+	@echo "  make run-projections       - 📐 Demo de 3 projeções (NECESSÁRIO PARA PROFESSOR)"
 	@echo "  make help                  - Mostra esta ajuda"
 	@echo ""
 	@echo "Programas disponíveis:"
-	@echo "  interactive_opengl   - 🎮 Interface principal OpenGL (software rendering)"
-	@echo "  pick_demo            - Demo de picking"
-	@echo "  projection_demo      - Demo de projeções"
-	@echo "  transform_demo       - Demo de transformações"
+	@echo "  ./interactive_opengl       - 🎮 Cena principal com tudo (câmera, transformações, sombras, texturas, picking)"
+	@echo "  ./projection_demo          - 📐 Demonstração de 3 planos de fuga (perspectiva, ortográfica, oblíqua)"
 	@echo ""
-	@echo "📝 Como trocar texturas:"
-	@echo "  1. Coloque suas imagens em textures/"
-	@echo "  2. Renomeie para: wood.jpg, stained_glass.jpg, wall.jpg"
-	@echo "  3. Execute: make run"
+	@echo "🎮 Controles da cena principal:"
+	@echo "  W/A/S/D     - Mover câmera"
+	@echo "  Q/E         - Subir/Descer"
+	@echo "  Setas       - Rotacionar câmera"
+	@echo "  I/K/J/L     - Transladar altar"
+	@echo "  U/O         - Altar subir/descer"
+	@echo "  N/M         - Rotacionar altar"
+	@echo "  R           - Resetar altar"
+	@echo "  Mouse       - Picking (clique na vela para ligar/desligar)"
+	@echo "  ESC         - Sair"
 	@echo ""
-	@echo "🎮 Controles OpenGL:"
-	@echo "  W/A/S/D - Mover câmera"
-	@echo "  Q/E     - Subir/Descer"
-	@echo "  Setas   - Rotacionar view"
-	@echo "  Mouse   - Click para PICKING"
-	@echo "  ESC     - Sair"
+	@echo "⚙️  Configurações no código: src/interactive_opengl.cpp linhas 21-106"
 
-.PHONY: all clean run run-opengl run-pick run-projections run-transforms help
+.PHONY: all clean run run-projections help
