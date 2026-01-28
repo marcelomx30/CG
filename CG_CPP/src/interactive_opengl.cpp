@@ -22,158 +22,54 @@ using namespace std;
 const int WIDTH = 800;
 const int HEIGHT = 600;
 
-// ============================================================================
-// ⚙️ CONFIGURAÇÕES PARA DEMONSTRAÇÃO AO PROFESSOR
-// ============================================================================
-// ALTERE ESTES VALORES PARA DEMONSTRAR AS FUNCIONALIDADES!
-// Após alterar, recompile com: make clean && make && ./interactive_opengl
-// ============================================================================
+// Camera configuration
+const Vector3 CAMERA_POSITION(6, 1.8, 2);
+const Vector3 CAMERA_LOOKAT(6, 1.5, 10);
+const Vector3 CAMERA_UP(0, 1, 0);
+const float CAMERA_FOV = 60.0f;
 
-// ──────────────────────────────────────────────────────────────────────────
-// 1️⃣ CÂMERA (Position, LookAt, Up)
-// ──────────────────────────────────────────────────────────────────────────
-// ⚠️ ALTERE AQUI PARA DEMONSTRAR CÂMERA AO PROFESSOR ⚠️
+// Object transformations (Altar)
+Vector3 altarTranslation(0, 0, 0);
+float altarRotationY = 0.0f;
 
-// Posição da câmera (onde está) - formato: Vector3(X, Y, Z)
-// Exemplo de valores para testar:
-//   const Vector3 CAMERA_POSITION(10, 3, 5);   // Mais longe e mais alto
-//   const Vector3 CAMERA_POSITION(6, 1.8, -5); // Vista de trás
-//   const Vector3 CAMERA_POSITION(0, 2, 10);   // Canto esquerdo
-const Vector3 CAMERA_POSITION(6, 1.8, 2);        // ← ALTERE AQUI
+// Lighting configuration
+const Vector3 LIGHT_HOSTIA_POS(6, 5, 15);
+const Color LIGHT_HOSTIA_COLOR(0.7f, 0.7f, 0.7f);
+const Vector3 LIGHT_CANDLE_POS(8, 1.1f, 17.5f);
+const Color LIGHT_CANDLE_COLOR(0.5f, 0.15f, 0.075f);
+const Color AMBIENT_LIGHT(0.15f, 0.15f, 0.18f);
 
-// Para onde a câmera olha - formato: Vector3(X, Y, Z)
-// Exemplo de valores para testar:
-//   const Vector3 CAMERA_LOOKAT(6, 1.5, 15);   // Olhar mais para o fundo
-//   const Vector3 CAMERA_LOOKAT(10, 1, 10);    // Olhar para a direita
-const Vector3 CAMERA_LOOKAT(6, 1.5, 10);         // ← ALTERE AQUI
+// Emissive objects (self-illumination)
+const float EMISSIVE_HOSTIA = 3.0f;
+const float EMISSIVE_VITRAL = 0.9f;
+const float EMISSIVE_CANDLE = 1.3f;
+const float EMISSIVE_WALLS = 0.36f;
+const float EMISSIVE_CEILING = 0.36f;
+const float EMISSIVE_FLOOR = 0.08f;
 
-// Vetor "up" da câmera (orientação) - normalmente (0, 1, 0)
-const Vector3 CAMERA_UP(0, 1, 0);                // ← ALTERE AQUI (raramente necessário)
+// Chapel dimensions (origin at front-left floor corner)
+const float CHAPEL_WIDTH = 12.0f;
+const float CHAPEL_HEIGHT = 8.0f;
+const float CHAPEL_DEPTH = 20.0f;
 
-// Campo de visão (FOV) em graus
-// Exemplo de valores para testar:
-//   const float CAMERA_FOV = 45.0f;   // Visão mais fechada (zoom in)
-//   const float CAMERA_FOV = 90.0f;   // Visão mais ampla (wide angle)
-const float CAMERA_FOV = 60.0f;                  // ← ALTERE AQUI
-
-// ──────────────────────────────────────────────────────────────────────────
-// 2️⃣ TRANSFORMAÇÕES DE OBJETOS (Translação + Rotação)
-// ──────────────────────────────────────────────────────────────────────────
-// ⚠️ ALTERE AQUI PARA DEMONSTRAR TRANSFORMAÇÕES AO PROFESSOR ⚠️
-
-// Translação do altar (X, Y, Z)
-// Exemplo de valores para testar:
-//   Vector3 altarTranslation(2, 0, 0);    // Move 2 unidades para DIREITA
-//   Vector3 altarTranslation(-2, 0, 0);   // Move 2 unidades para ESQUERDA
-//   Vector3 altarTranslation(0, 1, 0);    // Move 1 unidade para CIMA
-//   Vector3 altarTranslation(0, -0.5, 0); // Move 0.5 unidades para BAIXO
-//   Vector3 altarTranslation(0, 0, 3);    // Move 3 unidades para FRENTE
-//   Vector3 altarTranslation(0, 0, -2);   // Move 2 unidades para TRÁS
-Vector3 altarTranslation(0, 0, 0);        // ← ALTERE AQUI
-
-// Rotação do altar em torno do eixo Y (em radianos)
-// Conversão: graus = radianos * 180 / π
-// Exemplo de valores para testar:
-//   float altarRotationY = 0.52f;   // ~30 graus
-//   float altarRotationY = 0.79f;   // ~45 graus
-//   float altarRotationY = 1.57f;   // ~90 graus
-//   float altarRotationY = 3.14f;   // ~180 graus
-//   float altarRotationY = -1.57f;  // ~-90 graus (sentido oposto)
-float altarRotationY = 0.0f;              // ← ALTERE AQUI
-
-// ──────────────────────────────────────────────────────────────────────────
-// 3️⃣ ILUMINAÇÃO (Posição e Intensidade das Luzes)
-// ──────────────────────────────────────────────────────────────────────────
-// ⚠️ ALTERE AQUI PARA DEMONSTRAR ILUMINAÇÃO AO PROFESSOR ⚠️
-
-// Luz 1: Hóstia (luz divina/sagrada)
-// Exemplo de valores para testar:
-//   const Vector3 LIGHT_HOSTIA_POS(6, 5, 15);     // Luz mais alta e para frente
-//   const Color LIGHT_HOSTIA_COLOR(1.0f, 1.0f, 1.0f);  // Branco puro
-//   const Color LIGHT_HOSTIA_COLOR(1.0f, 0.5f, 0.5f);  // Luz rosada
-const Vector3 LIGHT_HOSTIA_POS(6, 1.4, 18);           // ← ALTERE AQUI
-const Color LIGHT_HOSTIA_COLOR(0.7f, 0.7f, 0.8f);     // ← ALTERE AQUI (RGB)
-
-// Luz 2: Vela (luz quente quando acesa)
-// Exemplo de valores para testar:
-//   const Color LIGHT_CANDLE_COLOR(1.0f, 0.3f, 0.1f);  // Luz mais forte
-const Vector3 LIGHT_CANDLE_POS(8, 1.1f, 17.5f);       // ← ALTERE AQUI
-const Color LIGHT_CANDLE_COLOR(0.5f, 0.15f, 0.075f);  // ← ALTERE AQUI (RGB)
-
-// Luz ambiente (iluminação geral da cena)
-// Exemplo de valores para testar:
-//   const Color AMBIENT_LIGHT(0.3f, 0.3f, 0.3f);  // Mais claro
-//   const Color AMBIENT_LIGHT(0.05f, 0.05f, 0.08f);  // Mais escuro
-const Color AMBIENT_LIGHT(0.15f, 0.15f, 0.18f);       // ← ALTERE AQUI (RGB)
-
-// ──────────────────────────────────────────────────────────────────────────
-// 4️⃣ OBJETOS EMISSIVOS (Brilho próprio)
-// ──────────────────────────────────────────────────────────────────────────
-// ⚠️ ALTERE AQUI PARA DEMONSTRAR EMISSIVIDADE AO PROFESSOR ⚠️
-// Valores maiores = mais brilho, valores menores = menos brilho
-
-// Exemplo de valores para testar:
-//   const float EMISSIVE_HOSTIA = 3.0f;   // Hóstia muito brilhante
-//   const float EMISSIVE_VITRAL = 0.5f;   // Vitral mais escuro
-//   const float EMISSIVE_WALLS = 0.9f;    // Paredes muito brilhantes
-const float EMISSIVE_HOSTIA = 2.0f;       // ← ALTERE AQUI (Hóstia 200%)
-const float EMISSIVE_VITRAL = 0.9f;       // ← ALTERE AQUI (Vitral 90%)
-const float EMISSIVE_CANDLE = 1.3f;       // ← ALTERE AQUI (Chama vela 130%)
-const float EMISSIVE_WALLS = 0.36f;       // ← ALTERE AQUI (Paredes 36%)
-const float EMISSIVE_CEILING = 0.36f;     // ← ALTERE AQUI (Teto 36%)
-const float EMISSIVE_FLOOR = 0.08f;       // ← ALTERE AQUI (Chão 8%)
-
-// ──────────────────────────────────────────────────────────────────────────
-// 5️⃣ DIMENSÕES DA CAPELA (Sistema de Coordenadas)
-// ──────────────────────────────────────────────────────────────────────────
-// Origem: (0, 0, 0) no canto frontal esquerdo do chão
-const float CHAPEL_WIDTH = 12.0f;   // Largura (eixo X)
-const float CHAPEL_HEIGHT = 8.0f;   // Altura (eixo Y)
-const float CHAPEL_DEPTH = 20.0f;   // Profundidade (eixo Z)
-
-// ──────────────────────────────────────────────────────────────────────────
-// 6️⃣ SOMBRAS (Shadow Rays)
-// ──────────────────────────────────────────────────────────────────────────
-// ⚠️ ALTERE AQUI PARA DEMONSTRAR SOMBRAS AO PROFESSOR ⚠️
-
-// Ativar/desativar sombras
-// Exemplo de valores para testar:
-//   const bool ENABLE_SHADOWS = false;  // Sem sombras
-const bool ENABLE_SHADOWS = true;         // ← ALTERE AQUI
-
-// Intensidade da sombra (quanto de luz chega nas áreas sombreadas)
-// 0.0 = completamente escuro (sombra 100%)
-// 0.5 = sombra média (50% da luz chega)
-// 1.0 = sem sombra (100% da luz chega)
-// Exemplo de valores para testar:
-//   const float SHADOW_INTENSITY = 0.1f;   // Sombras muito escuras
-//   const float SHADOW_INTENSITY = 0.6f;   // Sombras suaves
-const float SHADOW_INTENSITY = 0.3f;      // ← ALTERE AQUI
-
-// Pequeno offset para evitar "shadow acne" (raramente precisa alterar)
+// Shadow configuration
+const bool ENABLE_SHADOWS = true;
+const float SHADOW_INTENSITY = 0.3f;
 const float SHADOW_BIAS = 0.001f;
 
-// ──────────────────────────────────────────────────────────────────────────
-// 7️⃣ VELA (Estado inicial)
-// ──────────────────────────────────────────────────────────────────────────
-bool candleLit = true;  // true = acesa, false = apagada
+// Candle state
+bool candleLit = true;
 
-// ──────────────────────────────────────────────────────────────────────────
-// 8️⃣ TIPOS DE PROJEÇÃO (3 Planos de Fuga)
-// ──────────────────────────────────────────────────────────────────────────
-// ⚠️ ALTERE AQUI PARA DEMONSTRAR PROJEÇÕES AO PROFESSOR ⚠️
-// Use teclas 1, 2, 3, 4 durante execução para alternar entre projeções
-
+// Projection types
 enum ProjectionType {
-    PROJECTION_PERSPECTIVE,   // Tecla 1: Perspectiva (padrão)
-    PROJECTION_ORTHOGRAPHIC,  // Tecla 2: Ortográfica
-    PROJECTION_OBLIQUE_CAV,   // Tecla 3: Oblíqua Cavalier (45°, fator 1.0)
-    PROJECTION_OBLIQUE_CAB    // Tecla 4: Oblíqua Cabinet (63.4°, fator 0.5)
+    PROJECTION_PERSPECTIVE,
+    PROJECTION_ORTHOGRAPHIC,
+    PROJECTION_OBLIQUE_CAV,
+    PROJECTION_OBLIQUE_CAB
 };
 
-ProjectionType currentProjection = PROJECTION_PERSPECTIVE;  // ← ALTERE AQUI para projeção inicial
+ProjectionType currentProjection = PROJECTION_PERSPECTIVE;
 
-// Função auxiliar para obter nome da projeção
 const char* getProjectionName(ProjectionType proj) {
     switch(proj) {
         case PROJECTION_PERSPECTIVE: return "Perspectiva";
@@ -183,10 +79,6 @@ const char* getProjectionName(ProjectionType proj) {
         default: return "Desconhecida";
     }
 }
-
-// ============================================================================
-// FIM DAS CONFIGURAÇÕES
-// ============================================================================
 
 // Texturas globais
 Texture woodTexture;
@@ -1221,11 +1113,9 @@ int main() {
     cout << "  W/A/S/D - Mover camera" << endl;
     cout << "  Q/E - Subir/Descer" << endl;
     cout << "  Setas - Rotacionar camera" << endl;
+    cout << "  1/2/3/4 - Alternar projecao" << endl;
     cout << "  Mouse - Picking (clique na vela para ligar/desligar)" << endl;
-    cout << "  ESC - Sair" << endl;
-    cout << "\nPara alterar transformacoes, iluminacao, camera, etc.:" << endl;
-    cout << "  Edite: src/interactive_opengl.cpp (linhas 21-106)" << endl;
-    cout << "  Recompile: make clean && make\n" << endl;
+    cout << "  ESC - Sair\n" << endl;
 
     // Carregar texturas
     cout << "Carregando texturas..." << endl;
